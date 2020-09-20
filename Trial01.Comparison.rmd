@@ -1,0 +1,362 @@
+---
+title: "Covid19: CSOmap results display"
+author: "Jason Li"
+date: "`r Sys.Date()`"
+output:
+  html_notebook:
+    fig_caption: yes
+    toc: yes
+  html_document:
+    df_print: paged
+    toc: yes
+---
+
+```{r, echo=FALSE}
+# !diagnostics off
+knitr::opts_chunk$set(
+  comment = "#>",
+  collapse = TRUE,
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  error = FALSE
+)
+```
+
+# Dependencies
+```{r message=FALSE, warning=FALSE}
+# dependencies
+library("Seurat")
+library("tidyverse")
+library("assertthat")
+library("reshape2")
+library("tictoc")
+
+source("utils/utils.R")
+
+```
+
+# Load datasets 2 compare
+```{r}
+res_lst = list(
+  originMatlab = list(coordinate_path = "/raid1/jason/tools/CSOmapR/results/CSOmapMatlab/result/demo_coordinate.txt",
+                      label_path = "/raid1/jason/tools/CSOmapR/results/CSOmapMatlab/label.txt", 
+  originRgithub = list(coordinate_path = "/raid1/jason/tools/CSOmapR/results/CSOmap.R_github/coordinates.txt",
+                       label_path = "/raid1/jason/tools/CSOmapR/results/CSOmap.R_github/label.txt"),
+  githubPlusCpp = list(coordinate_path = "/raid1/jason/tools/CSOmapR/results/CSOmap_githubPlusCpp/coordinates.txt",
+                       label_path = "/raid1/jason/tools/CSOmapR/results/CSOmap_githubPlusCpp/label.txt"), 
+    cpp_modified = list(coordinate_path = "/raid1/jason/tools/CSOmapR/results/CSOmap_cpp_modified/coordinates.txt",
+                       label_path = "/raid1/jason/tools/CSOmapR/results/CSOmap_cpp_modified/cell_infos.tsv")
+  # originR = list(coordinate_path = "/raid1/jason/tools/CSOmapR/results/CSOmap_origin/coordinates.txt",
+  #                label_path = "/raid1/jason/tools/CSOmapR/results/CSOmap_origin/cell_infos.tsv"), 
+  # # origin raw P - Q replaced as P_Q
+  # originR_raw_P_Q = list(coordinate_path = "/raid1/jason/tools/CSOmapR/results/CSOmap_origin_P_Q/coordinates.txt",
+  #                label_path = "/raid1/jason/tools/CSOmapR/results/CSOmap_origin_P_Q/cell_infos.tsv"), 
+  # # origin raw P - Q not replaced as P_Q
+  # `originR_raw_P-Q` = list(coordinate_path = "/raid1/jason/tools/CSOmapR/results/CSOmap_origin_P-Q/coordinates.txt",
+  #                label_path = "/raid1/jason/tools/CSOmapR/results/CSOmap_origin_P-Q/cell_infos.tsv"), 
+  # cppR = list(
+  #   coordinate_path = "/raid1/jason/tools/CSOmapR/results/CSOmap_cpp/coordinates.txt", 
+  #   label_path = "/raid1/jason/tools/CSOmapR/results/CSOmap_cpp/cell_infos.tsv"
+  # ),
+  # `cppR_P-Q` = list(coordinate_path = "/raid1/jason/tools/CSOmapR/results/CSOmap_cpp_P-Q/coordinates.txt",
+  #             label_path = "/raid1/jason/tools/CSOmapR/results/CSOmap_cpp_P-Q/cell_infos.tsv")
+)
+
+for(chosen_sample in names(res_lst)){
+  res_lst[[chosen_sample]][["coordinates3D"]] = read_tsv(res_lst[[chosen_sample]]$coordinate_path, guess = 1000)
+  res_lst[[chosen_sample]][["label"]] = read_tsv(res_lst[[chosen_sample]]$label_path, guess = 1000)
+}
+
+```
+
+# Check density plot
+```{r}
+for(chosen_sample in names(res_lst)){
+  coordinate_tbl = res_lst[[chosen_sample]][["coordinates3D"]]
+  label_tbl = res_lst[[chosen_sample]][["label"]] 
+  
+  join_vec = setNames(colnames(label_tbl)[1], nm = colnames(coordinate_tbl)[1])
+  plt_tbl = left_join(coordinate_tbl, label_tbl, by = join_vec, suffix = c("", ".y"))
+  
+  density_obj = getDensity3D(plt_tbl$x, plt_tbl$y, plt_tbl$z)
+  plt_tbl = plt_tbl %>% mutate(density = density_obj)
+  
+  require(plotly)
+  fig_density = plot_ly(
+    plt_tbl,
+    x = ~ x,
+    y = ~ y,
+    z = ~ z,
+    alpha = 0.4,
+    color = ~ density
+  )  %>% add_markers() %>%
+    layout(title = paste0("3D density of ", chosen_sample))
+  print(fig_density)
+}
+
+```
+
+```{r}
+TPM_tbl = read_tsv("/raid1/jason/tools/CSOmap/CSOmap.R/data/demo/TPM.txt")
+
+# origin
+TPM_ori <- read.table("/raid1/jason/tools/CSOmap/CSOmap.R/data/demo/TPM.txt", header = TRUE, sep = "\t")
+genenames <- TPM_ori$X
+TPM_ori <- TPM_ori[, 2:dim(TPM_ori)[2]]
+TPM_ori[is.na(TPM_ori)] = 0
+cellnames <- colnames(TPM_ori)
+
+labelData_ori <- read.table("/raid1/jason/tools/CSOmap/CSOmap.R/data/demo/label.txt", header = TRUE, sep = "\t")
+
+LR_ori <- read.table("/raid1/jason/tools/CSOmap/CSOmap.R/data/demo/LR_pairs.txt", header = FALSE, sep = "\t")
+
+```
+
+# Debug Trial: `affinityMat`
+```{r}
+TPM = TPM_ori
+labelData = labelData_ori
+LR = LR_ori
+# origin
+labels <- labelData$labels[match(cellnames, labelData$cells)]
+labels[is.na(labels)] = "unlabeled"
+standards <- unique(labels)
+labelIx <- match(labels, standards)
+cellCounts <- table(labelIx)
+# find ligands and receptors TPM
+ligandsIndex <- match(LR$V1, genenames)
+receptorIndex <- match(LR$V2, genenames)
+ligandsTPM <-
+  as.matrix(TPM[ligandsIndex[!is.na(ligandsIndex) &
+                               !is.na(receptorIndex)], ])
+receptorTPM <-
+  as.matrix(TPM[receptorIndex[!is.na(ligandsIndex) &
+                                !is.na(receptorIndex)], ])
+LRscores <- LR$V3[!is.na(ligandsIndex) & !is.na(receptorIndex)]
+affinityMat <- t(ligandsTPM) %*% diag(LRscores) %*% receptorTPM
+# discret affinityMat
+for (i in 1:dim(affinityMat)) {
+  affinityArray <- affinityMat[i, ]
+  affinityArraySorted <- sort(affinityArray, decreasing = TRUE)
+  affinityArray[affinityArray <= affinityArraySorted[50]] = 0
+  affinityMat[i, ] = affinityArray
+}
+
+ligandsIndex_ori = ligandsIndex
+ligandsTPM_ori = ligandsTPM
+affinityMat_ori = affinityMat
+
+
+# modified
+TPM = TPM_ori
+labelData = labelData_ori
+LR = LR_ori
+genenames = rownames(TPM)
+cellnames = colnames(TPM)
+
+# get the TPM of ligands and receptors
+ligandsIndex <- match(LR[, 1, drop = T], genenames)
+receptorIndex <- match(LR[, 2, drop = T], genenames)
+ligandsTPM <-
+  as.matrix(TPM[ligandsIndex[!is.na(ligandsIndex) &
+                               !is.na(receptorIndex)],])
+receptorTPM <-
+  as.matrix(TPM[receptorIndex[!is.na(ligandsIndex) &
+                                !is.na(receptorIndex)],])
+LRscores <-
+  rep(1, nrow(LR))[!is.na(ligandsIndex) & !is.na(receptorIndex)]
+affinityMat <- t(ligandsTPM) %*% diag(LRscores) %*% receptorTPM
+
+# get coordinates through affinity matrix
+for (i in 1:nrow(affinityMat)) {
+  affinityArray <- affinityMat[i,]
+  affinityArraySorted <- sort(affinityArray, decreasing = TRUE)
+  affinityArray[affinityArray <= affinityArraySorted[50]] = 0
+  affinityMat[i,] = affinityArray
+}
+
+ligandsIndex_new = ligandsIndex
+ligandsTPM_new = ligandsTPM
+affinityMat_new = affinityMat
+
+all.equal(affinityMat_ori, affinityMat_new)
+all.equal(ligandsTPM_ori, ligandsTPM_new)
+all.equal(ligandsIndex_ori, ligandsIndex_new)
+```
+
+# Debug Trial: `optimization`
+```{r}
+# rerun_coordinates_mt_bk = rerun_coordinates_mt
+affinityMat = getCoordinates_debug(expression_mt, LR = LR_pair_tbl, verbose = T, epoch = 10)
+
+max_iter = 5
+
+# Original way ----
+k = 3
+n = dim(affinityMat)[1]
+ydata = matrix(rnorm(k * n), n)
+eps = 2 ^ (-52)
+P = 0.5 * (affinityMat + t(affinityMat))
+P = P/sum(P)
+gains = matrix(1, nrow(ydata), ncol(ydata))
+grads_ori = matrix(0, nrow(ydata), ncol(ydata))
+incs = matrix(0, nrow(ydata), ncol(ydata))
+min_gain = 0.01
+momentum = 0.5
+final_momentum = 0.8 
+epsilon = 1000
+min_cost = 0
+mom_switch_iter = 250
+epoch = 1
+condition = "tight"
+ydata_ori = ydata
+for(iter in 1:max_iter){
+  sum_ydata_ori = apply(ydata_ori ^ 2, 1, sum)
+  d = sum_ydata_ori + sweep(-2 * ydata_ori %*% t(ydata_ori), 2,-t(sum_ydata_ori))
+  num = 1 / (1 + d)
+  diag(num) = 0
+  Q = num / sum(num)
+  if (any(is.nan(num)))
+    message("NaN in grad. descent")
+  Q[Q < eps] = eps
+  P_Q = P - Q
+  P_Q[P_Q > 0 & d <= 0.01] = -0.01
+  
+  # stiffnesses_ori = 4 * (P - Q) * num
+  stiffnesses_ori = 4 * P_Q * num
+  for (i in 1:n) {
+    grads_ori[i,] = apply(sweep(-ydata_ori, 2,-ydata_ori[i,]) *
+                        stiffnesses_ori[, i], 2, sum)
+  }
+  gains = ((gains + 0.2) * abs(sign(grads_ori) != sign(incs)) +
+             gains * 0.8 * abs(sign(grads_ori) == sign(incs)))
+  gains[gains < min_gain] = min_gain
+  incs = momentum * incs - epsilon * (gains * grads_ori)
+  ydata_ori = ydata_ori + incs
+  ydata_ori = sweep(ydata_ori, 2, apply(ydata_ori, 2, mean))
+  if (iter == mom_switch_iter)
+    momentum = final_momentum
+  if (iter %% epoch == 0) {
+    cost = sum(apply(P * log((P + eps) / (Q + eps)), 1,
+                     sum))
+    message("Iteration #", iter, " loss function cost is: ",
+            cost)
+    if (cost < min_cost)
+      break
+  }
+  range = max(abs(ydata_ori))
+  if (condition == "tight") {
+    if (range > 50 && iter %% 10 == 0) {
+      ydata_ori = ydata_ori * 50 / range
+    }
+  } else {
+    if (range > 50 && iter %% max_iter == 0) {
+      ydata_ori = ydata_ori * 50 / range
+    }
+  }
+}
+
+
+# Cpp way ----
+k = 3
+n = dim(affinityMat)[1]
+eps = 2 ^ (-52)
+P = 0.5 * (affinityMat + t(affinityMat))
+P = P/sum(P)
+gains = matrix(1, nrow(ydata), ncol(ydata))
+grads_cpp = matrix(0, nrow(ydata), ncol(ydata))
+incs = matrix(0, nrow(ydata), ncol(ydata))
+min_gain = 0.01
+momentum = 0.5
+final_momentum = 0.8 
+epsilon = 1000
+mom_switch_iter = 250
+epoch = 1
+min_cost = 0
+condition = "tight"
+ydata_cpp = ydata
+# 10 iterations
+for(iter in 1:max_iter){
+  d = calc_d_rcpp(ydata_cpp)
+  num = 1/(1+d)
+  diag(num) = 0
+  Q = num/sum(num)
+  Q[Q < eps] = eps
+  P_Q = P - Q
+  P_Q[P_Q > 0 & d <= 0.01] = -0.01
+  
+  stiffnesses_cpp = 4 * P_Q * num
+  
+  grads_cpp = update_grads_rcpp(grads_cpp, ydata_cpp, stiffnesses_cpp)
+  
+  gains = ((gains + 0.2) * abs(sign(grads_cpp) != sign(incs)) +
+             gains * 0.8 * abs(sign(grads_cpp) == sign(incs)))
+  gains[gains < min_gain] = min_gain
+  incs = momentum * incs - epsilon * (gains * grads_cpp)
+  ydata_cpp = ydata_cpp + incs
+  ydata_cpp = sweep(ydata_cpp, 2, apply(ydata_cpp, 2, mean))
+  if (iter == mom_switch_iter)
+    momentum = final_momentum
+  if (iter %% epoch == 0) {
+    cost = sum(apply(P * log((P + eps) / (Q + eps)), 1,
+                     sum))
+    message("Iteration #", iter, " loss function cost is: ",
+            cost)
+    if (cost < min_cost)
+      break
+  }
+  range = max(abs(ydata_cpp))
+  if (condition == "tight") {
+    if (range > 50 && iter %% 10 == 0) {
+      ydata_cpp = ydata_cpp * 50 / range
+    }
+  } else {
+    if (range > 50 && iter %% max_iter == 0) {
+      ydata_cpp = ydata_cpp * 50 / range
+    }
+  }
+}
+
+all.equal(ydata_ori, ydata_cpp)
+```
+
+# Compare significance level of different pipeline
+```{r}
+originMatlab_qvalue_tbl = read_tsv("/raid1/jason/tools/CSOmapR/results/CSOmapMatlab/result/demo_qvalue.txt", col_names = c("ClusterPair", "item"))
+
+originMatlab_qvalue_tbl = originMatlab_qvalue_tbl %>% separate(item, into = c("item", "qvalue"),sep = ":") %>% mutate(q.value = as.numeric(qvalue)) %>% select(ClusterPair, q.value) 
+
+
+# ----
+originR_qvalue_tbl = read_tsv("/raid1/jason/tools/CSOmapR/results/CSOmap.R_github/qvalue.txt", guess = 10)
+originR_qvalue_tbl = originR_qvalue_tbl %>% pivot_longer(cols = -X) %>% unite(col = "ClusterPair", X, name, sep = "---") %>% setNames(nm = c("ClusterPair", "q.value")) 
+# ----
+
+mydesign_qvalue_tbl = read_csv("/raid1/jason/tools/CSOmapR/results/CSOmap_cpp_modified/signif_interacting_clusters_labels.csv") %>% dplyr::select(cluster_pair, q.value) 
+
+# ----
+union_qvalue_tbl = full_join(originMatlab_qvalue_tbl, originR_qvalue_tbl, by = "ClusterPair", suffix = c("_oriMatlab", "_oriR")) %>% full_join(mydesign_qvalue_tbl, by = c("ClusterPair" = "cluster_pair"))
+```
+
+may due to different coordinates
+```{r}
+TPM = res_lst$originMatlab$coordinates3D[,2:4] %>% as.matrix()
+rownames(TPM) = res_lst$originMatlab$coordinates3D$ID
+colnames(TPM) = c("x","y","z")
+labels = (res_lst$originMatlab$label %>% deframe)[rownames(TPM)]
+rerun_signif_lst =  getSignificance(coordinates = TPM, labels = labels)
+
+union_qvalue_tbl = union_qvalue_tbl %>% full_join(rerun_signif_lst$pvalue_tbl %>% dplyr::select(cluster_pair, q.value), by = c("ClusterPair" = "cluster_pair"), suffix = c("_mydesignR", "_mydesignRxOriCoords"))
+
+union_qvalue_mt = union_qvalue_tbl[, -1] %>% as.matrix()
+rownames(union_qvalue_mt) = union_qvalue_tbl$ClusterPair
+colnames(union_qvalue_mt) = c("MatlabResult", "RResult", "RMyDesign", "MydesignUsingMatlabCoords")
+
+
+union_qvalue_cor = cor(union_qvalue_mt, use = "pairwise.complete.obs", method = "pearson")
+View(union_qvalue_cor)
+
+union_qvalue_cor = cor(union_qvalue_mt, use = "pairwise.complete.obs", method = "spearman")
+View(union_qvalue_cor)
+```
