@@ -40,3 +40,6 @@ vignettes/*.pdf
 
 # Ignore html
 **.html
+
+# Ignore results
+/results/
