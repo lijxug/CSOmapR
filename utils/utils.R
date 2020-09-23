@@ -1,6 +1,6 @@
 suppressPackageStartupMessages(library("Rcpp"))
 suppressPackageStartupMessages(library("RcppEigen"))
-sourceCpp("/raid1/jason/tools/CSOmapR/utils/functions.cpp") # hard coded, should be modified in the future
+sourceCpp("utils/functions.cpp") # hard coded, should be modified in the future
 
 # Main interface ----
 
@@ -92,8 +92,8 @@ getSignificance = function(coordinates, labels, k = 3, verbose = T) {
   # write.table(p_value, pvaluePath, quote = TRUE, sep = "\t")
   # write.table(q_value, qvaluePath, quote = TRUE, sep = "\t")
   result = list()
-  result$coordinates = coordinates
-  result$counts = counts
+  # result$coordinates = coordinates
+  result$connections = counts
   result$pvalue = p_value
   # result$qvalue = q_value
   result$pvalue_tbl = p_value_tbl
@@ -144,7 +144,7 @@ optimization_origin <-
             mom_switch_iter = 250, 
             epsilon = 1000, 
             min_gain = 0.01,
-            eps = 2 ^ (-52),
+            eps = 2.2251e-308,
             epoch = 100,
             verbose = F) 
 { # this function is inspired from tsne algorithm. We use similar gradient descent
@@ -160,7 +160,8 @@ optimization_origin <-
     ydata = initial_config
   }
   else {
-    ydata = matrix(rnorm(k * n), n)
+    # ydata = matrix(rnorm(k * n), n)
+    ydata = (matrix(runif(k * n), n) - 0.5) * 50
   }
   P = 0.5 * (affinityMat + t(affinityMat))
   P[P < eps] <- eps
@@ -254,7 +255,7 @@ optimization <-
             mom_switch_iter = 250, 
             epsilon = 1000, 
             min_gain = 0.01,
-            eps = 2 ^ (-52),
+            eps = 2.2251e-308,
             epoch = 100,
             verbose = F) {
     n = nrow(affinityMat)
@@ -267,7 +268,8 @@ optimization <-
       ydata = initial_config
     }
     else {
-      ydata = matrix(rnorm(k * n), n)
+      # ydata = matrix(rnorm(k * n), n)
+      ydata = (matrix(runif(k * n), n) - 0.5) * 50
     }
     P = 0.5 * (affinityMat + t(affinityMat))
     P[P < eps] <- eps
@@ -324,16 +326,12 @@ optimization <-
     ydata
   }
 
-#' calculate coordinates
-#'
+#' Get affinityMatrix
 #' @param TPM a TPM matrix with gene names as rownames and cell names as colnames
 #' @param LR a dataframe/tibble record the information of ligand receptor pairs, have to have colnames "ligand" and "receptor"
-#' @param version The version of functions to run. 'origin' or 'cpp'
 #' @param verbose logical. If TRUE, print out the progress information
-#' @param ... arguments passsed to optimization
 #' 
-#'
-getCoordinates = function(TPM, LR, version = 'cpp', verbose = F, ...) {
+getAffinityMat = function(TPM, LR, verbose = F, ...) {
   genenames = rownames(TPM)
   cellnames = colnames(TPM)
   
@@ -358,10 +356,29 @@ getCoordinates = function(TPM, LR, version = 'cpp', verbose = F, ...) {
     affinityArray[affinityArray <= affinityArraySorted[50]] = 0
     affinityMat[i, ] = affinityArray
   }
+  affinityMat
+}
+
+#' calculate coordinates
+#'
+#' @param TPM a TPM matrix with gene names as rownames and cell names as colnames
+#' @param LR a dataframe/tibble record the information of ligand receptor pairs, have to have colnames "ligand" and "receptor"
+#' @param version The version of functions to run. 'origin' or 'cpp'
+#' @param verbose logical. If TRUE, print out the progress information
+#' @param ... arguments passsed to optimization
+#' 
+#'
+getCoordinates = function(TPM, LR, version = 'cpp', verbose = F, ...) {
+  # Get affinity
+  affinityMat = getAffinityMat(TPM, LR)
   # optimization
   if(verbose) loginfo("Optimizing coordinates")
   if(version == 'origin'){
     coords <- optimization_origin(affinityMat, verbose = verbose, ...)
+  } else if(version == "Rtsne"){
+    coords = Rtsne::Rtsne(affinityMat, ...)
+  } else if(version == "umap"){
+    coords = umap::umap(affinityMat, ...)
   } else {
     coords <- optimization(affinityMat, verbose = verbose, ...)
   }
@@ -369,6 +386,7 @@ getCoordinates = function(TPM, LR, version = 'cpp', verbose = F, ...) {
   colnames(coords) <- c('x', 'y', 'z')
   coords
 }
+
 
 
 # Calculations: R version ----

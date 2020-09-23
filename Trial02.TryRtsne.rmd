@@ -1,0 +1,127 @@
+---
+title: "Covid19: CSOmap results display"
+author: "Jason Li"
+date: "`r Sys.Date()`"
+output:
+  html_notebook:
+    fig_caption: yes
+    toc: yes
+  html_document:
+    df_print: paged
+    toc: yes
+---
+
+```{r, echo=FALSE}
+# !diagnostics off
+knitr::opts_chunk$set(
+  comment = "#>",
+  collapse = TRUE,
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  error = FALSE
+)
+```
+
+# Dependencies
+```{r message=FALSE, warning=FALSE}
+# dependencies
+library("Seurat")
+library("tidyverse")
+library("assertthat")
+library("reshape2")
+library("tictoc")
+
+source("utils/utils.R")
+
+```
+
+# Run CSOmap in R
+
+## Load dataset
+```{r}
+loginfo("Loading input file ...")
+tic()
+TPM_tbl <- read_tsv("/home/jason/git/CSOmapR/data/demo/TPM.txt")
+LR <- read.table("/home/jason/git/CSOmapR/data/demo/LR_pairs.txt", header = FALSE, sep = "\t")
+labelData <- read_tsv("/home/jason/git/CSOmapR/data/demo/label.txt")
+toc()
+
+# set variables & validation ----
+TPM = as.matrix(TPM_tbl[,-1])
+rownames(TPM) = TPM_tbl[, 1, drop = T] 
+TPM[is.na(TPM)] = 0
+
+```
+
+# Run 5 times
+```{r}
+out_dir = "/home/jason/git/CSOmapR/results/R/"
+seeds = c(1:5)
+time_tbl = tibble()
+demoR_lst = list()
+for(seed2set in seeds){
+  # Run cpp protocol ----
+  result_dir = paste0(out_dir, "cpp_demo_0", seed2set, "/")
+  set.seed(seeds)
+  tic(msg = paste0("cpp_0", seed2set, "_forCoord"))
+  # get coordinates ----
+  coords = getCoordinates(TPM, LR, version = "cpp")
+  coords_tbl = bind_cols(cellName = rownames(coords), as.data.frame(coords))
+  time_used_cpp = toc()
+  
+  # Calling significance ----
+  tic(msg = "Calling significance")
+  labels <- labelData[, 2, drop = T][match(colnames(TPM), labelData[,1,drop = T])]
+  labels[is.na(labels)] = "unlabeled"
+  standards <- unique(labels)
+  labelIx <- match(labels, standards)
+  cellCounts <- table(labelIx)
+  # Get significance & get Connections
+  signif_res = getSignificance(coords, labels = labels)
+  toc()
+  
+  # store cell info
+  join_vec = setNames(colnames(labelData)[1], nm = colnames(coords_tbl)[1])
+  cellinfo_tbl = left_join(coords_tbl, labelData, by = join_vec)
+  
+  # store
+  demoR_lst[[paste0("demo_0", seed2set, "_cpp")]] = list(coords = coords_tbl, signif_res = signif_res, cellinfo = cellinfo_tbl)
+  
+  # Run origin protocol ----
+  result_dir = paste0(out_dir, "origin_demo_0", seed2set, "/")
+  set.seed(seeds)
+  tic(msg = paste0("origin_0", seed2set, "_forCoord"))
+  # get coordinates ----
+  coords = getCoordinates(TPM, LR, version = "origin")
+  coords_tbl = bind_cols(cellName = rownames(coords), as.data.frame(coords))
+  time_used_origin = toc()
+  
+  # Calling significance ----
+  tic(msg = "Calling significance")
+  labels <- labelData[, 2, drop = T][match(colnames(TPM), labelData[,1,drop = T])]
+  labels[is.na(labels)] = "unlabeled"
+  standards <- unique(labels)
+  labelIx <- match(labels, standards)
+  cellCounts <- table(labelIx)
+  # Get significance & get Connections
+  signif_res = getSignificance(coords, labels = labels)
+  toc()
+  
+  # store cell info
+  join_vec = setNames(colnames(labelData)[1], nm = colnames(coords_tbl)[1])
+  cellinfo_tbl = left_join(coords_tbl, labelData, by = join_vec)
+  
+  # store
+  demoR_lst[[paste0("demo_0", seed2set, "_origin")]] = list(coords = coords_tbl, signif_res = signif_res, cellinfo = cellinfo_tbl)
+  time_tbl = bind_rows(time_tbl, 
+                       bind_rows(
+                         tibble(item = "cpp", seed = seed2set, time_elapsed = time_used_cpp$toc-time_used_cpp$tic),
+                         tibble(item = "origin", seed = seed2set, time_elapsed = time_used_origin$toc-time_used_origin$tic)
+                       ))
+}
+
+write_rds(demoR_lst, path = paste0(out_dir, "demoR_lst.Rds"))
+write_csv(time_tbl, path = paste0(out_dir, "time_tbl.csv"))
+```
+
