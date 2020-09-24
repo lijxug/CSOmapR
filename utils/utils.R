@@ -405,30 +405,6 @@ update_grads = function(grads, ydata, stiffnesses) {
   return(grads)
 }
 
-# calc_stiffnesses = function(d, P, eps) {
-#   num = 1/(1+d)
-#   diag(num) = 0
-#   Q = num / sum(num)
-#   if (any(is.nan(num)))
-#     message("NaN in grad. descent")
-#   Q[Q < eps] = eps
-#   P_Q = P - Q
-#   P_Q[P_Q > 0 & d <= 0.01] = -0.01
-#   
-#   #stiffnesses = 4 * (P - Q) * num
-#   stiffnesses = 4 * P_Q * num
-#   return(stiffnesses)
-# }
-
-# calc_stiffnesses = function(Q, d, P, eps) {
-#   Q[Q < eps] = eps
-#   P_Q = P - Q
-#   # P_Q[P_Q > 0 & d <= 0.01] = -0.01
-#   
-#   #stiffnesses = 4 * (P - Q) * num
-#   stiffnesses = 4 * P_Q * num
-#   return(stiffnesses)
-# }
 
 # Inform functions ----
 initiatePB = function(iterOBJ){

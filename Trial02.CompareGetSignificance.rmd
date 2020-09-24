@@ -1,0 +1,172 @@
+---
+title: "CSOmap: compare functions"
+author: "Jason Li"
+date: "`r Sys.Date()`"
+output:
+  html_notebook:
+    fig_caption: yes
+    toc: yes
+  html_document:
+    df_print: paged
+    toc: yes
+---
+
+```{r, echo=FALSE}
+# !diagnostics off
+knitr::opts_chunk$set(
+  comment = "#>",
+  collapse = TRUE,
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  error = FALSE
+)
+```
+
+# Dependencies
+```{r message=FALSE, warning=FALSE}
+# dependencies
+library("Seurat")
+library("tidyverse")
+library("assertthat")
+library("reshape2")
+library("tictoc")
+
+
+```
+
+## Load dataset
+```{r}
+loginfo("Loading input file ...")
+tic()
+TPM_tbl <- read_tsv("/home/jason/git/CSOmapR/data/demo/TPM.txt")
+LR <- read.table("/home/jason/git/CSOmapR/data/demo/LR_pairs.txt", header = FALSE, sep = "\t")
+labelData <- read_tsv("/home/jason/git/CSOmapR/data/demo/label.txt")
+toc()
+
+
+# set variables & validation ----
+TPM = as.matrix(TPM_tbl[,-1])
+rownames(TPM) = TPM_tbl[, 1, drop = T] 
+TPM[is.na(TPM)] = 0
+
+```
+
+# 
+```{r}
+coords = getCoordinates(TPM, LR, version = "cpp")
+coords_tbl = bind_cols(cellName = rownames(coords), as.data.frame(coords))
+time_used_cpp = toc()
+
+labels <-
+  labelData[, 2, drop = T][match(colnames(TPM), labelData[, 1, drop = T])]
+labels[is.na(labels)] = "unlabeled"
+standards <- unique(labels)
+labelIx <- match(labels, standards)
+cellCounts <- table(labelIx)
+# Get significance & get Connections
+
+coordinates = coords
+k = 3
+```
+
+```{r}
+
+# My implementation ----
+# Calc distance
+dist <- as.matrix(dist(coordinates))
+counts_my <-
+  matrix(0, nrow = length(standards), ncol = length(standards))
+colnames(counts_my) <- standards
+rownames(counts_my) <- standards
+
+# identify topK as a cutoff
+loginfo("identify topK")
+topKs <- c()
+diag(dist) <- Inf
+topKs = apply(dist, 1, function(dist_row_i) {
+  distSorted <- sort(dist_row_i)
+  distSorted[k]
+})
+topK <- median(topKs)
+
+# Cells within topK range are recognized as connected
+loginfo("calculate connection")
+for (i in 1:nrow(dist)) {
+  connects <- which(dist[i, ] <= topK)
+  for (j in connects) {
+    counts_my[labelIx[i], labelIx[j]] = counts_my[labelIx[i], labelIx[j]] + 1
+  }
+}
+
+diag(counts_my) <- diag(counts_my) / 2 # counted twice
+
+# calculate pvalue using hypergeometric distribution
+loginfo("calculate pvalues")
+K <- (sum(counts_my) + sum(diag(counts_my))) / 2
+p_value <- counts_my
+for (i in 1:nrow(counts_my)) {
+  for (j in 1:ncol(counts_my)) {
+    if (i == j) {
+      M <- as.numeric(cellCounts[i]) * (as.numeric(cellCounts[i]) - 1)
+    } else {
+      M <- as.numeric(cellCounts[i]) * (as.numeric(cellCounts[j]))
+    }
+    N <- sum(cellCounts) * (sum(cellCounts) - 1) / 2 - M
+    p_value[i, j] <-
+      phyper(counts_my[i, j], M, N, K, lower.tail = FALSE)
+  }
+}
+
+p_value_tbl = p_value %>%
+  melt(varnames = c("cluster1", "cluster2"),
+       value.name = "p.value") %>%
+  mutate(cluster_pair = paste2columns(cluster1, cluster2)) %>% dplyr::select(cluster_pair, p.value) %>% distinct() %>% mutate(q.value = p.adjust(p.value))
+
+
+# ZGJ's implementation ----
+dist <- as.matrix(dist(coords))
+counts_zgj <-
+  matrix(0, nrow = length(standards), ncol = length(standards))
+colnames(counts_zgj) <- standards
+rownames(counts_zgj) <- standards
+k = 3 # default top k connections
+topKs <- c()
+diag(dist) <- Inf
+for (i in 1:dim(dist)[1]) {
+  distSorted <- sort(dist[i, ])
+  topKs <- c(topKs, distSorted[3])
+}
+topK <- median(topKs)
+for (i in 1:dim(dist)[1]) {
+  connects <- which(dist[i, ] <= topK)
+  for (j in connects) {
+    counts_zgj[labelIx[i], labelIx[j]] = counts_zgj[labelIx[i], labelIx[j]] + 1
+  }
+}
+diag(counts_zgj) <- diag(counts_zgj) / 2
+# calculate stats
+counts_zgjN <- (sum(counts_zgj) + sum(diag(counts_zgj))) / 2
+p_value_zgj <- counts_zgj
+K = counts_zgjN
+for (i in 1:dim(counts_zgj)[1]) {
+  for (j in 1:dim(counts_zgj)[2]) {
+    if (i == j) {
+      M <- as.numeric(cellCounts[i]) * (as.numeric(cellCounts[i]) - 1)
+    } else {
+      M <- as.numeric(cellCounts[i]) * (as.numeric(cellCounts[j]))
+    }
+    N <- sum(cellCounts) * (sum(cellCounts) - 1) / 2 - M
+    p_value_zgj[i, j] <-
+      phyper(counts_zgj[i, j], M, N, K, lower.tail = FALSE)
+  }
+}
+q_value <-
+  matrix(p.adjust(p_value_zgj),
+         nrow = length(standards),
+         ncol = length(standards))
+colnames(q_value) <- standards
+rownames(q_value) <- standards
+  
+```
+
