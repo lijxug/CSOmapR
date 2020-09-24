@@ -43,3 +43,6 @@ vignettes/*.pdf
 
 # Ignore results
 /results/
+
+# Ignore data-raw
+/data-raw/
