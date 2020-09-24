@@ -1,5 +1,5 @@
 ---
-title: "Covid19: CSOmap results display"
+title: "CSOmap runDemo"
 author: "Jason Li"
 date: "`r Sys.Date()`"
 output:
@@ -80,9 +80,6 @@ for(seed2set in seeds){
   tic(msg = "Calling significance")
   labels <- labelData[, 2, drop = T][match(colnames(TPM), labelData[,1,drop = T])]
   labels[is.na(labels)] = "unlabeled"
-  standards <- unique(labels)
-  labelIx <- match(labels, standards)
-  cellCounts <- table(labelIx)
   # Get significance & get Connections
   signif_res = getSignificance(coords, labels = labels)
   toc()
@@ -117,9 +114,6 @@ for(seed2set in seeds){
   tic(msg = "Calling significance")
   labels <- labelData[, 2, drop = T][match(colnames(TPM), labelData[,1,drop = T])]
   labels[is.na(labels)] = "unlabeled"
-  standards <- unique(labels)
-  labelIx <- match(labels, standards)
-  cellCounts <- table(labelIx)
   # Get significance & get Connections
   signif_res = getSignificance(coords, labels = labels)
   toc()
@@ -161,9 +155,6 @@ for(seed2set in seeds){
     labels <-
       labelData[, 2, drop = T][match(colnames(TPM), labelData[, 1, drop = T])]
     labels[is.na(labels)] = "unlabeled"
-    standards <- unique(labels)
-    labelIx <- match(labels, standards)
-    cellCounts <- table(labelIx)
     # Get significance & get Connections
     signif_res = getSignificance(coords, labels = labels)
     toc()
@@ -207,9 +198,6 @@ for(seed2set in seeds){
   tic(msg = "Calling significance")
   labels <- labelData[, 2, drop = T][match(colnames(TPM), labelData[,1,drop = T])]
   labels[is.na(labels)] = "unlabeled"
-  standards <- unique(labels)
-  labelIx <- match(labels, standards)
-  cellCounts <- table(labelIx)
   # Get significance & get Connections
   signif_res = getSignificance(coords, labels = labels)
   toc()
@@ -248,9 +236,6 @@ for(seed2set in seeds){
   tic(msg = "Calling significance")
   labels <- labelData[, 2, drop = T][match(colnames(TPM), labelData[,1,drop = T])]
   labels[is.na(labels)] = "unlabeled"
-  standards <- unique(labels)
-  labelIx <- match(labels, standards)
-  cellCounts <- table(labelIx)
   # Get significance & get Connections
   signif_res = getSignificance(coords, labels = labels)
   toc()
