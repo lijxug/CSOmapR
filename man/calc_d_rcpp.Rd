@@ -7,9 +7,7 @@
 calc_d_rcpp(ydata)
 }
 \arguments{
-\item{ydata}{A matrix of coordinates}
-
-\item{v2}{Second value}
+\item{ydata}{a matrix of coordinates}
 }
 \value{
 d

@@ -7,11 +7,11 @@
 update_grads_rcpp(grads, ydata, stiffnesses)
 }
 \arguments{
-\item{grads}{A matrix of gradients}
+\item{grads}{a matrix of gradients}
 
-\item{ydata}{A matrix of coordinates}
+\item{ydata}{a matrix of coordinates}
 
-\item{stiffnesses}{A matrix of stiffnesses}
+\item{stiffnesses}{a matrix of stiffnesses}
 }
 \value{
 updated grads

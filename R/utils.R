@@ -216,7 +216,7 @@ optimization_origin <-
 
 #' Optimize the 3D coordinates(cpp)
 #' 
-#' this function is inspired from tsne algorithm. We use similar gradient descent 
+#' This function is inspired from tsne algorithm. We use similar gradient descent 
 #' method to optimize our target function specified in our paper. 
 #' condition can be loose or tight, we suggest using "loose" condition 
 #' for dataset with over 10000 cells 
@@ -426,8 +426,6 @@ getDensity3D = function(x, y, z, n = 100, ...) {
   ii <- cbind(ix, iy, iz)
   return(dens$d[ii])
 }
-
-
 
 # Inform functions ----
 initiatePB = function(iterOBJ){

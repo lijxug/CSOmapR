@@ -2,11 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{optimization_origin}
 \alias{optimization_origin}
-\title{Optimize the 3D coordinates(origin)
-this function is inspired from tsne algorithm. We use similar gradient descent 
-method to optimize our target function specified in our paper. 
-condition can be loose or tight, we suggest using "loose" condition 
-for dataset with over 10000 cells}
+\title{Optimize the 3D coordinates(origin)}
 \usage{
 optimization_origin(
   affinityMat,
@@ -58,7 +54,6 @@ optimization_origin(
 a matrix of optimized 3D coordinates
 }
 \description{
-Optimize the 3D coordinates(origin)
 this function is inspired from tsne algorithm. We use similar gradient descent 
 method to optimize our target function specified in our paper. 
 condition can be loose or tight, we suggest using "loose" condition 

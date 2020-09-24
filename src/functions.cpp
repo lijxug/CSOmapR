@@ -11,9 +11,10 @@ using Eigen::VectorXd;
 
 
 //' Calculate d using Rcpp
-//' @param ydata A matrix of coordinates
-//' @param v2 Second value
+//' 
+//' @param ydata a matrix of coordinates
 //' @return d
+//' 
 // [[Rcpp::export]]
 Eigen::MatrixXd calc_d_rcpp(Eigen::MatrixXd ydata){
   Eigen::MatrixXd y_square = ydata.array().square();
@@ -29,10 +30,12 @@ Eigen::MatrixXd calc_d_rcpp(Eigen::MatrixXd ydata){
 }
 
 //' Update gradients using Rcpp
-//' @param grads A matrix of gradients
-//' @param ydata A matrix of coordinates
-//' @param stiffnesses A matrix of stiffnesses
+//' 
+//' @param grads a matrix of gradients
+//' @param ydata a matrix of coordinates
+//' @param stiffnesses a matrix of stiffnesses
 //' @return updated grads
+//' 
 // [[Rcpp::export]]
 Eigen::MatrixXd update_grads_rcpp(Eigen::MatrixXd grads, Eigen::MatrixXd ydata, Eigen::MatrixXd stiffnesses){
   for(int i = 0; i<grads.rows(); i++){

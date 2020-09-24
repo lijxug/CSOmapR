@@ -169,7 +169,6 @@ q_value <-
 colnames(q_value) <- standards
 rownames(q_value) <- standards
   
-
 # Compare between demo_matlab & R connections
 counts_test = counts_my[-nrow(counts_my), -ncol(counts_my)]
 demo_matlab_connections = demoAll_lst$demo_01_matlab$signif_res$connections

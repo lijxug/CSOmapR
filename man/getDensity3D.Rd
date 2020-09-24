@@ -6,6 +6,11 @@
 \usage{
 getDensity3D(x, y, z, n = 100, ...)
 }
+\arguments{
+\item{x, y, z}{coordinates}
+
+\item{n}{numbers of grid points to use for each dimension; recycled if length is less than 3.}
+}
 \description{
-get 3D density
+Wrapper for misc3d::kde3d to get density estimation
 }
