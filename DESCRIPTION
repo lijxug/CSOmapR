@@ -1,0 +1,15 @@
+Package: CSOmapR
+Type: Package
+Title: CSOmap in R
+Version: 1.0
+Date: 2020-09-24
+Author: Jason Li
+Maintainer: Jason Li <lijxug@gmail.com>
+Description: 
+  pass
+Encoding: UTF-8
+License: MIT
+Imports: Rcpp (>= 1.0.3)
+LinkingTo: Rcpp, RcppEigen
+RoxygenNote: 7.1.0.9000
+LazyData: true
