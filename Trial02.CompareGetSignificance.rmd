@@ -26,7 +26,6 @@ knitr::opts_chunk$set(
 # Dependencies
 ```{r message=FALSE, warning=FALSE}
 # dependencies
-library("Seurat")
 library("tidyverse")
 library("assertthat")
 library("reshape2")

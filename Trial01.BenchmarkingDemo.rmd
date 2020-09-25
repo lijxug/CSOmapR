@@ -26,7 +26,6 @@ knitr::opts_chunk$set(
 # Dependencies
 ```{r message=FALSE, warning=FALSE}
 # dependencies
-library("Seurat")
 library("tidyverse")
 library("assertthat")
 library("reshape2")
@@ -104,11 +103,11 @@ for(dir2read in demoMatlab_dirs){
   
   demoMatlab_lst[[paste0(sample_name, "_matlab")]] = list(
     coords = coords_tbl, 
-    signif_res = signif_res,
-    # signif_res = list(
-    #   connections = connections_mt, 
-    #   pvalue_tbl = pvalue_tbl
-    # ), 
+    # signif_res = signif_res,
+    signif_res = list(
+      connections = connections_mt,
+      pvalue_tbl = pvalue_tbl
+    ),
     cellinfo = cellinfo_tbl
   )
 }
