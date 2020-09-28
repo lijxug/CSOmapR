@@ -7,7 +7,7 @@
 #' @return d
 #' 
 calc_d_rcpp <- function(ydata) {
-    .Call('_CSOmapR_calc_d_rcpp', PACKAGE = 'CSOmapR', ydata)
+    .Call(`_CSOmapR_calc_d_rcpp`, ydata)
 }
 
 #' Update gradients using Rcpp
@@ -18,6 +18,6 @@ calc_d_rcpp <- function(ydata) {
 #' @return updated grads
 #' 
 update_grads_rcpp <- function(grads, ydata, stiffnesses) {
-    .Call('_CSOmapR_update_grads_rcpp', PACKAGE = 'CSOmapR', grads, ydata, stiffnesses)
+    .Call(`_CSOmapR_update_grads_rcpp`, grads, ydata, stiffnesses)
 }
 
