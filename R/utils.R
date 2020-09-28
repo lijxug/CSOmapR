@@ -65,7 +65,7 @@ getSignificance = function(coordinates, labels, k = 3, verbose = T) {
   for (i in 1:nrow(counts)) {
     for (j in 1:ncol(counts)) {
       if (i == j) {
-        M <- as.numeric(cellCounts[i]) * (as.numeric(cellCounts[i]) - 1)
+        M <- as.numeric(cellCounts[i]) * (as.numeric(cellCounts[i]) - 1) / 2
       } else {
         M <- as.numeric(cellCounts[i]) * (as.numeric(cellCounts[j]))
       }
