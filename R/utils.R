@@ -28,7 +28,7 @@ getSignificance = function(coordinates, labels, k = 3, verbose = T) {
   rownames(counts) <- standards
   
   # identify topK as a cutoff
-  loginfo("identify topK")
+  if(verbose) loginfo("identify topK")
   topKs <- c()
   diag(dist) <- Inf
   # print(dim(dist))
@@ -43,7 +43,7 @@ getSignificance = function(coordinates, labels, k = 3, verbose = T) {
   topK <- median(topKs)
   
   # Cells within topK range are recognized as connected
-  loginfo("calculate connection")
+  if(verbose) loginfo("calculate connection")
   for (i in 1:nrow(dist)) {
     connects <- which(dist[i,] <= topK)
     for (j in connects) {
@@ -59,7 +59,7 @@ getSignificance = function(coordinates, labels, k = 3, verbose = T) {
   # write.table(counts, countsPath, quote = TRUE, sep = "\t")
   
   # calculate pvalue using hypergeometric distribution
-  loginfo("calculate pvalues")
+  if(verbose) loginfo("calculate pvalues")
   K <- (sum(counts) + sum(diag(counts))) / 2
   p_value <- counts
   for (i in 1:nrow(counts)) {
@@ -75,34 +75,26 @@ getSignificance = function(coordinates, labels, k = 3, verbose = T) {
     }
   }
   
-  p_value_tbl = p_value %>% 
-    melt(varnames = c("cluster1", "cluster2"), value.name = "p.value") %>% 
-    mutate(cluster_pair = paste2columns(cluster1, cluster2)) %>% dplyr::select(
-      cluster_pair, p.value
-    ) %>% distinct() %>% mutate(q.value = p.adjust(p.value))
+  # p adjust
+  clusters = colnames(p_value)
+  cluster_pair = paste(clusters[row(p_value)], clusters[col(p_value)], sep="---")
+  i = lower.tri(p_value, diag = T)
+  p_value_df = 
+    data.frame(cluster_pair = cluster_pair[i], 
+               p.value = p_value[i], 
+               q.value = p.adjust(p_value[i]))
   
-  # q_value <-
-  #   matrix(p.adjust(p_value),
-  #          nrow = length(standards),
-  #          ncol = length(standards))
-  # colnames(q_value) <- standards
-  # rownames(q_value) <- standards
-  # # write p and q value
-  # pvaluePath <- paste0("./results/", DataSetName, "/pvalue.txt")
-  # qvaluePath <- paste0("./results/", DataSetName, "/qvalue.txt")
-  # write.table(p_value, pvaluePath, quote = TRUE, sep = "\t")
-  # write.table(q_value, qvaluePath, quote = TRUE, sep = "\t")
+  q_value = p_value
+  q_value[i] = p_value_df$q.value
+  q_value = t(q_value)
+  q_value[i] = p_value_df$q.value
+  
   result = list()
-  # result$coordinates = coordinates
   result$connections = counts
   result$pvalue = p_value
-  # result$qvalue = q_value
-  result$pvalue_tbl = p_value_tbl
+  result$qvalue = q_value
+  result$pvalue_tbl = p_value_df
   result$topK = topK
-  # # plot 3d and heatmap
-  # plot_ly(x=coordinates[,1], y=coordinates[,2], z=coordinates[,3], type="scatter3d", mode="markers", color=labels)
-  # heatmap(p_value, scale = "none", Colv = NA, Rowv = NA)
-  # heatmap(q_value, scale = "none", Colv = NA, Rowv = NA)
   return(result)
 }
 
