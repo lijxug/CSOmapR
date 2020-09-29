@@ -9,7 +9,8 @@ getAffinityMat(TPM, LR, verbose = F, ...)
 \arguments{
 \item{TPM}{a TPM matrix with gene names as rownames and cell names as colnames}
 
-\item{LR}{a dataframe/tibble record the information of ligand receptor pairs, have to have colnames "ligand" and "receptor"}
+\item{LR}{a dataframe/tibble record the information of ligand receptor pairs, 
+have to have colnames "ligand", "receptor" and an optional third column with weights}
 
 \item{verbose}{logical. If TRUE, print out the progress information}
 }

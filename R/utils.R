@@ -16,47 +16,73 @@ getSignificance = function(coordinates, labels, k = 3, verbose = T) {
   require(reshape2)
   require(dplyr)
   # preprocess
+  labels = setNames(labels, nm = rownames(coordinates))
   standards <- unique(labels)
   labelIx <- match(labels, standards)
   cellCounts <- table(labelIx)
   
-  # Calc distance
-  dist <- as.matrix(dist(coordinates))
+  # Calc dist_mtance
+  dist_mt <- as.matrix(dist(coordinates))
+  
+  # identify topK as a cutoff
+  if(verbose) loginfo("identify topK")
+  topKs <- c()
+  diag(dist_mt) <- Inf
+  topKs = apply(dist_mt, 1, function(dist_mt_row_i){
+    dist_mtSorted <- sort(dist_mt_row_i)
+    dist_mtSorted[k]
+  })
+  topK <- median(topKs)
+  
+  # initiate counts
   counts <-
     matrix(0, nrow = length(standards), ncol = length(standards))
   colnames(counts) <- standards
   rownames(counts) <- standards
   
-  # identify topK as a cutoff
-  if(verbose) loginfo("identify topK")
-  topKs <- c()
-  diag(dist) <- Inf
-  # print(dim(dist))
-  topKs = apply(dist, 1, function(dist_row_i){
-    distSorted <- sort(dist_row_i)
-    distSorted[k]
-  })
-  # for (i in 1:nrow(dist)) {
-  #   distSorted <- sort(dist[i,])
-  #   topKs <- c(topKs, distSorted[k])
-  # }
-  topK <- median(topKs)
-  
   # Cells within topK range are recognized as connected
-  if(verbose) loginfo("calculate connection")
-  for (i in 1:nrow(dist)) {
-    connects <- which(dist[i,] <= topK)
-    for (j in connects) {
-      counts[labelIx[i], labelIx[j]] = counts[labelIx[i], labelIx[j]] + 1
+  
+  # if(verbose) loginfo("calculate connection")
+  # for (i in 1:nrow(dist_mt)) { # explore cells one by one
+  #   connects <- which(dist_mt[i,] <= topK)
+  #   for (j in connects) {
+  #     counts[labelIx[i], labelIx[j]] = counts[labelIx[i], labelIx[j]] + 1
+  #   }
+  # }
+  
+  # an alternative way
+  connects_mt = dist_mt <= topK
+  counts =
+    apply(apply(connects_mt, 1, function(x) {
+      tapply(x, labels, sum)
+    }), 1, function(x) {
+      tapply(x, labels, sum)
+    })
+  
+  diag(counts) <- diag(counts) / 2 # diag elements were counted twice
+  
+  # Store detailed connected cell pairs
+  detailed_connections = list()
+  clusterPairs2run = rbind(t(combn(standards, 2)), matrix(rep(standards, 2), ncol = 2))
+  for(i_row in 1:nrow(clusterPairs2run)) {
+    cluster1 = clusterPairs2run[i_row, 1]
+    cluster2 = clusterPairs2run[i_row, 2]
+    
+    cellsfrom1 = names(labels)[labels == cluster1]
+    cellsfrom2 = names(labels)[labels == cluster2]
+    
+    
+    sub_connects_mt = connects_mt[cellsfrom1, cellsfrom2]
+    
+    if(cluster1 == cluster2){ # only count once if self2self
+      sub_connects_mt[lower.tri(sub_connects_mt)] = F
     }
+    sub_connects_df = data.frame(
+      cell1 = cellsfrom1[row(sub_connects_mt)][sub_connects_mt], 
+      cell2 = cellsfrom2[col(sub_connects_mt)][sub_connects_mt], stringsAsFactors = F
+    )
+    detailed_connections[[paste0(cluster1, "---", cluster2)]] = sub_connects_df
   }
-  
-  diag(counts) <- diag(counts) / 2 # counted twice
-  
-  
-  # write counts
-  # countsPath <- paste0("./results/", DataSetName, "/counts.txt")
-  # write.table(counts, countsPath, quote = TRUE, sep = "\t")
   
   # calculate pvalue using hypergeometric distribution
   if(verbose) loginfo("calculate pvalues")
@@ -94,6 +120,7 @@ getSignificance = function(coordinates, labels, k = 3, verbose = T) {
   result$pvalue = p_value
   result$qvalue = q_value
   result$pvalue_tbl = p_value_df
+  result$detailed_connections = detailed_connections
   result$topK = topK
   return(result)
 }
@@ -314,7 +341,8 @@ optimization <-
 
 #' Get affinityMatrix
 #' @param TPM a TPM matrix with gene names as rownames and cell names as colnames
-#' @param LR a dataframe/tibble record the information of ligand receptor pairs, have to have colnames "ligand" and "receptor"
+#' @param LR a dataframe/tibble record the information of ligand receptor pairs, 
+#' have to have colnames "ligand", "receptor" and an optional third column with weights
 #' @param verbose logical. If TRUE, print out the progress information
 #' 
 getAffinityMat = function(TPM, LR, verbose = F, ...) {
@@ -331,7 +359,14 @@ getAffinityMat = function(TPM, LR, verbose = F, ...) {
   receptorTPM <-
     as.matrix(TPM[receptorIndex[!is.na(ligandsIndex) &
                                   !is.na(receptorIndex)], ])
-  LRscores <- rep(1, nrow(LR))[!is.na(ligandsIndex) & !is.na(receptorIndex)]
+  
+  # determine weight scores
+  if(ncol(LR) > 3){
+    LRscores = LR[!is.na(ligandsIndex) & !is.na(receptorIndex), 3]
+  } else {
+    LRscores <- rep(1, nrow(LR))[!is.na(ligandsIndex) & !is.na(receptorIndex)]
+  }
+  
   affinityMat <- t(ligandsTPM) %*% diag(LRscores) %*% receptorTPM
   
   # get coordinates through affinity matrix
@@ -375,6 +410,54 @@ getCoordinates = function(TPM, LR, optimization = 'Rcpp', verbose = F, ...) {
 }
 
 
+#' get LR contribution for all the listed cluster pairs
+#' 
+#' @param TPM a TPM matrix with gene names as rownames and cell names as colnames
+#' @param LR a dataframe/tibble record the information of ligand receptor pairs, 
+#' have to have colnames "ligand", "receptor" and an optional third column with weights
+#' @param detailed_connections a list generated by `getSignificance`, 
+#' which stored the connected cell pairs for each clutser pair
+#' @return a named list with sorted LR contributions
+#' @export
+#' 
+getContribution = function(TPM, LR, detailed_connections){
+  LR[, 1] = as.character(LR[, 1])
+  LR[, 2] = as.character(LR[, 2])
+  
+  ligands_existed = intersect(rownames(TPM), LR[, 1])
+  receptors_existed = intersect(rownames(TPM), LR[, 2])
+  
+  flt_LR = LR[(LR[, 1]%in%ligands_existed) & (LR[, 2]%in% receptors_existed), ]
+  
+  if(ncol(LR) > 2){
+    LRscores = flt_LR[, 3]
+  } else {
+    LRscores = rep(1, nrow(LR))
+  }
+  
+  LR_contri_lst = list()
+  # calculate contribution cell-pair by cell-pair
+  for(target_clusterPair in names(detailed_connections)){
+    L1S = TPM[flt_LR[, 1], detailed_connections[[target_clusterPair]][, 1]]
+    R1S = TPM[flt_LR[, 2], detailed_connections[[target_clusterPair]][, 1]]
+    L1R = TPM[flt_LR[, 1], detailed_connections[[target_clusterPair]][, 2]]
+    R1R = TPM[flt_LR[, 2], detailed_connections[[target_clusterPair]][, 2]]
+    
+    all_intensity = L1S * LRscores * R1R + R1S * LRscores * L1R 
+    rownames(all_intensity) = paste0(flt_LR[, 1], "---", flt_LR[, 2])
+    contribution_mt = t(t(all_intensity) / (colSums(all_intensity)))
+    
+    contribution_forCluster = sort(rowSums(contribution_mt) / ncol(contribution_mt), decreasing = T)
+    # head(contribution_forCluster)
+    LR_contri_lst[[target_clusterPair]] = contribution_forCluster
+  }
+  
+  return(LR_contri_lst)
+}
+
+#' #' calcualte LR contribution
+#' #' 
+#' calculateContribution = function(TPM, )
 
 # Calculations: R version ----
 calc_d = function(ydata) {
