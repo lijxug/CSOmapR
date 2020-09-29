@@ -33,8 +33,7 @@ library("tictoc")
 require(umap)
 require(Rtsne)
 
-source("utils/utils.R")
-
+library(CSOmapR)
 ```
 
 # Run CSOmap in R
@@ -43,15 +42,16 @@ source("utils/utils.R")
 ```{r}
 loginfo("Loading input file ...")
 tic()
-TPM_tbl <- read_tsv("/home/jason/git/CSOmapR/data/demo/TPM.txt")
-LR <- read.table("/home/jason/git/CSOmapR/data/demo/LR_pairs.txt", header = FALSE, sep = "\t")
-labelData <- read_tsv("/home/jason/git/CSOmapR/data/demo/label.txt")
+TPM_tbl <- read_tsv("/home/jason/git/CSOmapR/data-raw/demo/TPM.txt")
+TPM_tbl = TPM_tbl[, -ncol(TPM_tbl)]
+LR <- read.table("/home/jason/git/CSOmapR/data-raw/demo/LR_pairs.txt", header = FALSE, sep = "\t")
+labelData <- read_tsv("/home/jason/git/CSOmapR/data-raw/demo/label.txt")
 toc()
 
 # set variables & validation ----
 TPM = as.matrix(TPM_tbl[,-1])
 rownames(TPM) = TPM_tbl[, 1, drop = T] 
-TPM[is.na(TPM)] = 0
+assert_that(sum(is.na(TPM)) == 0)
 
 ```
 
