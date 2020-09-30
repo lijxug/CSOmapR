@@ -4,7 +4,7 @@
 \alias{getSignificance}
 \title{Test for significance level}
 \usage{
-getSignificance(coordinates, labels, k = 3, verbose = T)
+getSignificance(coordinates, labels, k = 3, verbose = F)
 }
 \arguments{
 \item{labels}{a vector of celltype labels, correspond to the coordinates matrix}

@@ -12,7 +12,7 @@
 #' @export
 #' @return A list contains coordinates, counts, p values and q values
 #' 
-getSignificance = function(coordinates, labels, k = 3, verbose = T) {
+getSignificance = function(coordinates, labels, k = 3, verbose = F) {
   require(reshape2)
   require(dplyr)
   # preprocess
@@ -51,6 +51,7 @@ getSignificance = function(coordinates, labels, k = 3, verbose = T) {
   # }
   
   # an alternative way
+  if(verbose) loginfo("calculate detailed connections")
   connects_mt = dist_mt <= topK
   counts =
     apply(apply(connects_mt, 1, function(x) {
