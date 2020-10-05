@@ -12,14 +12,14 @@
 #' @export
 #' @return A list contains coordinates, counts, p values and q values
 #' 
-getSignificance = function(coordinates, labels, k = 3, verbose = F) {
+getSignificance = function(coordinates, labels, k = 3, adjusted.method = "fdr", verbose = F) {
   require(reshape2)
   require(dplyr)
   # preprocess
   labels = setNames(labels, nm = rownames(coordinates))
   standards <- unique(labels)
-  labelIx <- match(labels, standards)
-  cellCounts <- table(labelIx)
+  # labelIx <- match(labels, standards)
+  cellCounts <- table(labels)
   
   # Calc dist_mtance
   dist_mt <- as.matrix(dist(coordinates))
@@ -89,12 +89,15 @@ getSignificance = function(coordinates, labels, k = 3, verbose = F) {
   if(verbose) loginfo("calculate pvalues")
   K <- (sum(counts) + sum(diag(counts))) / 2
   p_value <- counts
+  
+  assertthat::assert_that(all(rownames(counts) == names(cellCounts)))
+  assertthat::assert_that(all(colnames(counts) == names(cellCounts)))
   for (i in 1:nrow(counts)) {
     for (j in 1:ncol(counts)) {
       if (i == j) {
-        M <- as.numeric(cellCounts[i]) * (as.numeric(cellCounts[i]) - 1) / 2
+        M <- as.numeric(cellCounts[rownames(counts)[i]]) * (as.numeric(cellCounts[colnames(counts)[j]]) - 1) / 2
       } else {
-        M <- as.numeric(cellCounts[i]) * (as.numeric(cellCounts[j]))
+        M <- as.numeric(cellCounts[rownames(counts)[i]]) * (as.numeric(cellCounts[colnames(counts)[j]]))
       }
       N <- sum(cellCounts) * (sum(cellCounts) - 1) / 2 - M
       p_value[i, j] <-
@@ -109,7 +112,7 @@ getSignificance = function(coordinates, labels, k = 3, verbose = F) {
   p_value_df = 
     data.frame(cluster_pair = cluster_pair[i], 
                p.value = p_value[i], 
-               q.value = p.adjust(p_value[i]))
+               q.value = p.adjust(p_value[i], method = adjusted.method))
   
   q_value = p_value
   q_value[i] = p_value_df$q.value
@@ -344,38 +347,53 @@ optimization <-
 #' @param TPM a TPM matrix with gene names as rownames and cell names as colnames
 #' @param LR a dataframe/tibble record the information of ligand receptor pairs, 
 #' have to have colnames "ligand", "receptor" and an optional third column with weights
+#' @param denoise numeric value, 
 #' @param verbose logical. If TRUE, print out the progress information
+#' @export
 #' 
-getAffinityMat = function(TPM, LR, verbose = F, ...) {
+getAffinityMat = function(TPM, LR, denoise = 50, verbose = F, ...) {
   genenames = rownames(TPM)
   cellnames = colnames(TPM)
   
   # get the TPM of ligands and receptors
   if(verbose) loginfo("Extracting affinity matrix")
-  ligandsIndex <- match(LR[, 1, drop = T], genenames)
-  receptorIndex <- match(LR[, 2, drop = T], genenames)
+  # ligandsIndex <- match(LR[, 1, drop = T], genenames)
+  # receptorIndex <- match(LR[, 2, drop = T], genenames)
+  
+  flt_LR = LR[(LR[, 1] %in% rownames(TPM)) & (LR[, 2] %in% rownames(TPM)), ]
+  
+  reverse_flag = flt_LR[, 1] != flt_LR[, 2]
+  reverse_LR = flt_LR
+  reverse_LR[, 1] = flt_LR[,2]
+  reverse_LR[, 2] = flt_LR[,1]
+  reverse_LR = reverse_LR[reverse_flag, ]
+  
+  combn_LR = rbind(
+    flt_LR, 
+    reverse_LR
+  )
+  
   ligandsTPM <-
-    as.matrix(TPM[ligandsIndex[!is.na(ligandsIndex) &
-                                 !is.na(receptorIndex)], ])
+    as.matrix(TPM[combn_LR[, 1], ])
   receptorTPM <-
-    as.matrix(TPM[receptorIndex[!is.na(ligandsIndex) &
-                                  !is.na(receptorIndex)], ])
+    as.matrix(TPM[combn_LR[, 2], ])
   
   # determine weight scores
-  if(ncol(LR) > 3){
-    LRscores = LR[!is.na(ligandsIndex) & !is.na(receptorIndex), 3]
+  if(ncol(combn_LR) > 3){
+    LRscores = combn_LR[, 3]
   } else {
-    LRscores <- rep(1, nrow(LR))[!is.na(ligandsIndex) & !is.na(receptorIndex)]
+    LRscores <- rep(1, nrow(combn_LR))
   }
   
+  if(verbose) loginfo("Extracting coordinates affinity matrix")
   affinityMat <- t(ligandsTPM) %*% diag(LRscores) %*% receptorTPM
   
+  if(verbose) loginfo("Denoising ...")
   # get coordinates through affinity matrix
-  if(verbose) loginfo("Extracting coordinates affinity matrix")
   for (i in 1:nrow(affinityMat)) {
     affinityArray <- affinityMat[i, ]
     affinityArraySorted <- sort(affinityArray, decreasing = TRUE)
-    affinityArray[affinityArray <= affinityArraySorted[50]] = 0
+    affinityArray[affinityArray <= affinityArraySorted[denoise]] = 0
     affinityMat[i, ] = affinityArray
   }
   affinityMat
