@@ -4,13 +4,15 @@
 \alias{getAffinityMat}
 \title{Get affinityMatrix}
 \usage{
-getAffinityMat(TPM, LR, verbose = F, ...)
+getAffinityMat(TPM, LR, denoise = 50, verbose = F, ...)
 }
 \arguments{
 \item{TPM}{a TPM matrix with gene names as rownames and cell names as colnames}
 
 \item{LR}{a dataframe/tibble record the information of ligand receptor pairs, 
 have to have colnames "ligand", "receptor" and an optional third column with weights}
+
+\item{denoise}{numeric value,}
 
 \item{verbose}{logical. If TRUE, print out the progress information}
 }
