@@ -30,57 +30,88 @@
  *
  */
 
-#include "datapoint.h"
-#include <vector>
 
 #ifndef TSNE_H
 #define TSNE_H
 
+static inline double sign(double x) { return (x == .0 ? .0 : (x < .0 ? -1.0 : 1.0)); }
 
-static inline double sign_tsne(double x) { return (x == .0 ? .0 : (x < .0 ? -1.0 : 1.0)); }
+class TSNE {
 
-template <int NDims>
-class TSNE
-{    
 public:
-    TSNE(double perplexity, double theta, bool verbose, int max_iter, bool init, int stop_lying_iter, 
-       int mom_switch_iter, double momentum, double final_momentum, double eta, double exaggeration_factor,int num_threads);
+    int run(double *X, int N, int D, double *Y, int no_dims, double perplexity, double theta, int rand_seed,
+            bool skip_random_init, int max_iter, int stop_lying_iter, int mom_switch_iter, 
+            double momentum, double final_momentum, double learning_rate, int K, double sigma,
+            int knn_algo, double early_exag_coeff, double *costs,
+            bool no_momentum_during_exag, int start_late_exag_iter, double late_exag_coeff, int n_trees, int search_k,
+            int nterms, double intervals_per_integer, int min_num_intervals, unsigned int nthreads, int load_affinities,
+            int perplexity_list_length, double *perplexity_list, double df, double max_step_norm);
 
-    void run(double* X, unsigned int N, int D, double* Y, bool distance_precomputed, double* cost, double* itercost);
-    void run(const int* nn_index, const double* nn_dist, unsigned int N, int K, double* Y, double* cost, double* itercost);
+    bool load_data(const char *data_path, double **data, double **Y, int *n, int *d, int *no_dims, double *theta,
+            double *perplexity, int *rand_seed, int *max_iter, int *stop_lying_iter, 
+            int *mom_switch_iter, double* momentum, double* final_momentum, double* learning_rate, int *K, double *sigma,
+            int *nbody_algo, int *knn_algo, double* early_exag_coeff,  int *no_momentum_during_exag, int *n_trees,
+            int *search_k, int *start_late_exag_iter, double *late_exag_coeff, int *nterms,
+            double *intervals_per_integer, int *min_num_intervals, bool *skip_random_init, int *load_affinities,
+            int *perplexity_list_length, double **perplexity_list, double *df, double *max_step_norm);
+
+    void save_data(const char *result_path, double *data, double *costs, int n, int d, int max_iter);
+
+    void symmetrizeMatrix(unsigned int **row_P, unsigned int **col_P, double **val_P, int N); // should be static!
 
 private:
-    void symmetrizeMatrix(unsigned int N); 
-    void trainIterations(unsigned int N, double* Y, double* cost, double* itercost);
+    double current_sum_Q;
+    void computeGradient(double *P, unsigned int *inp_row_P, unsigned int *inp_col_P, double *inp_val_P, double *Y,
+                         int N, int D, double *dC, double theta, unsigned int nthreads);
 
-    void computeGradient(double* P, unsigned int* inp_row_P, unsigned int* inp_col_P, double* inp_val_P, double* Y, unsigned int N, int D, double* dC, double theta);
-    void computeExactGradient(double* P, double* Y, unsigned int N, int D, double* dC);
-    double evaluateError(double* P, double* Y, unsigned int N, int D);
-    double evaluateError(unsigned int* row_P, unsigned int* col_P, double* val_P, double* Y, unsigned int N, int D, double theta);
-    void getCost(double* P, double* Y, unsigned int N, int D, double* costs);
-    void getCost(unsigned int* row_P, unsigned int* col_P, double* val_P, double* Y, unsigned int N, int D, double theta, double* costs);
-    void zeroMean(double* X, unsigned int N, int D);
+    void computeFftGradientVariableDf(double *P, unsigned int *inp_row_P, unsigned int *inp_col_P, double *inp_val_P, double *Y,
+                                int N, int D, double *dC, int n_interpolation_points, double intervals_per_integer,
+                                int min_num_intervals, unsigned int nthreads, double df);
 
-    void computeGaussianPerplexity(double* X, unsigned int N, int D, bool distance_precomputed);
-    template<double (*distance)( const DataPoint&, const DataPoint& )>
-    void computeGaussianPerplexity(double* X, unsigned int N, int D, int K);
-    void computeGaussianPerplexity(const int* nn_dex, const double* nn_dist, unsigned int N, int K);
-    void setupApproximateMemory(unsigned int N, int K);
+    void computeFftGradient(double *P, unsigned int *inp_row_P, unsigned int *inp_col_P, double *inp_val_P, double *Y,
+                                int N, int D, double *dC, int n_interpolation_points, double intervals_per_integer,
+                                int min_num_intervals, unsigned int nthreads);
 
-    void computeProbabilities(const double perplexity, const int K, const double* distances, double* cur_P);
-    void computeSquaredEuclideanDistance(double* X, unsigned  int N, int D, double* DD);
-    void computeSquaredEuclideanDistanceDirect(double* X, unsigned int N, int D, double* DD);
-    
+    void computeFftGradientOneDVariableDf(double *P, unsigned int *inp_row_P, unsigned int *inp_col_P, double *inp_val_P,
+                                    double *Y, int N, int D, double *dC, int n_interpolation_points,
+                                    double intervals_per_integer, int min_num_intervals, unsigned int nthreads, double df);
+
+    void computeFftGradientOneD(double *P, unsigned int *inp_row_P, unsigned int *inp_col_P, double *inp_val_P,
+                                    double *Y, int N, int D, double *dC, int n_interpolation_points,
+                                    double intervals_per_integer, int min_num_intervals, unsigned int nthreads);
+
+    void computeExactGradient(double *P, double *Y, int N, int D, double *dC, double df);
+
+    void computeExactGradientTest(double *Y, int N, int D, double df);
+
+    double evaluateError(double *P, double *Y, int N, int D, double df);
+
+    double evaluateError(unsigned int *row_P, unsigned int *col_P, double *val_P, double *Y, int N, int D,
+                         double theta, unsigned int nthreads);
+
+    double evaluateErrorFft(unsigned int *row_P, unsigned int *col_P, double *val_P, double *Y, int N, int D, unsigned int nthreads, double df);
+    void zeroMean(double *X, int N, int D);
+
+	double distances2similarities(double *D, double *P, int N, int n, double perplexity, double sigma, bool ifSquared);
+
+	double distances2similarities(double *D, double *P, int N, int n, double perplexity, double sigma, bool ifSquared,
+                                  int perplexity_list_length, double *perplexity_list);
+
+    void computeGaussianPerplexity(double *X, int N, int D, double *P, double perplexity, double sigma,
+                                   int perplexity_list_length, double *perplexity_list);
+
+    void computeGaussianPerplexity(double *X, int N, int D, unsigned int **_row_P, unsigned int **_col_P,
+                                   double **_val_P, double perplexity, int K, double sigma, unsigned int nthreads,
+                                   int perplexity_list_length, double *perplexity_list);
+
+    int computeGaussianPerplexity(double *X, int N, int D, unsigned int **_row_P, unsigned int **_col_P,
+                                  double **_val_P, double perplexity, int K, double sigma, int num_trees, int search_k,
+                                  unsigned int nthreads, int perplexity_list_length, double *perplexity_list,
+                                  int rand_seed);
+
+    void computeSquaredEuclideanDistance(double *X, int N, int D, double *DD);
+
     double randn();
-
-    // Member variables.
-    double perplexity, theta, momentum, final_momentum, eta, exaggeration_factor;
-    int max_iter, stop_lying_iter, mom_switch_iter, num_threads;
-    bool verbose, init, exact;
-
-    std::vector<unsigned int> row_P, col_P;
-    std::vector<double> val_P, P;
 };
 
 #endif
-
