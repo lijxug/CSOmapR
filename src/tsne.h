@@ -47,15 +47,15 @@ public:
             int nterms, double intervals_per_integer, int min_num_intervals, unsigned int nthreads, int load_affinities,
             int perplexity_list_length, double *perplexity_list, double df, double max_step_norm);
 
-    bool load_data(const char *data_path, double **data, double **Y, int *n, int *d, int *no_dims, double *theta,
-            double *perplexity, int *rand_seed, int *max_iter, int *stop_lying_iter, 
-            int *mom_switch_iter, double* momentum, double* final_momentum, double* learning_rate, int *K, double *sigma,
-            int *nbody_algo, int *knn_algo, double* early_exag_coeff,  int *no_momentum_during_exag, int *n_trees,
-            int *search_k, int *start_late_exag_iter, double *late_exag_coeff, int *nterms,
-            double *intervals_per_integer, int *min_num_intervals, bool *skip_random_init, int *load_affinities,
-            int *perplexity_list_length, double **perplexity_list, double *df, double *max_step_norm);
-
-    void save_data(const char *result_path, double *data, double *costs, int n, int d, int max_iter);
+    // bool load_data(const char *data_path, double **data, double **Y, int *n, int *d, int *no_dims, double *theta,
+    //         double *perplexity, int *rand_seed, int *max_iter, int *stop_lying_iter, 
+    //         int *mom_switch_iter, double* momentum, double* final_momentum, double* learning_rate, int *K, double *sigma,
+    //         int *nbody_algo, int *knn_algo, double* early_exag_coeff,  int *no_momentum_during_exag, int *n_trees,
+    //         int *search_k, int *start_late_exag_iter, double *late_exag_coeff, int *nterms,
+    //         double *intervals_per_integer, int *min_num_intervals, bool *skip_random_init, int *load_affinities,
+    //         int *perplexity_list_length, double **perplexity_list, double *df, double *max_step_norm);
+    // 
+    // void save_data(const char *result_path, double *data, double *costs, int n, int d, int max_iter);
 
     void symmetrizeMatrix(unsigned int **row_P, unsigned int **col_P, double **val_P, int N); // should be static!
 
@@ -64,21 +64,21 @@ private:
     void computeGradient(double *P, unsigned int *inp_row_P, unsigned int *inp_col_P, double *inp_val_P, double *Y,
                          int N, int D, double *dC, double theta, unsigned int nthreads);
 
-    void computeFftGradientVariableDf(double *P, unsigned int *inp_row_P, unsigned int *inp_col_P, double *inp_val_P, double *Y,
-                                int N, int D, double *dC, int n_interpolation_points, double intervals_per_integer,
-                                int min_num_intervals, unsigned int nthreads, double df);
-
-    void computeFftGradient(double *P, unsigned int *inp_row_P, unsigned int *inp_col_P, double *inp_val_P, double *Y,
-                                int N, int D, double *dC, int n_interpolation_points, double intervals_per_integer,
-                                int min_num_intervals, unsigned int nthreads);
-
-    void computeFftGradientOneDVariableDf(double *P, unsigned int *inp_row_P, unsigned int *inp_col_P, double *inp_val_P,
-                                    double *Y, int N, int D, double *dC, int n_interpolation_points,
-                                    double intervals_per_integer, int min_num_intervals, unsigned int nthreads, double df);
-
-    void computeFftGradientOneD(double *P, unsigned int *inp_row_P, unsigned int *inp_col_P, double *inp_val_P,
-                                    double *Y, int N, int D, double *dC, int n_interpolation_points,
-                                    double intervals_per_integer, int min_num_intervals, unsigned int nthreads);
+    // void computeFftGradientVariableDf(double *P, unsigned int *inp_row_P, unsigned int *inp_col_P, double *inp_val_P, double *Y,
+    //                             int N, int D, double *dC, int n_interpolation_points, double intervals_per_integer,
+    //                             int min_num_intervals, unsigned int nthreads, double df);
+    // 
+    // void computeFftGradient(double *P, unsigned int *inp_row_P, unsigned int *inp_col_P, double *inp_val_P, double *Y,
+    //                             int N, int D, double *dC, int n_interpolation_points, double intervals_per_integer,
+    //                             int min_num_intervals, unsigned int nthreads);
+    // 
+    // void computeFftGradientOneDVariableDf(double *P, unsigned int *inp_row_P, unsigned int *inp_col_P, double *inp_val_P,
+    //                                 double *Y, int N, int D, double *dC, int n_interpolation_points,
+    //                                 double intervals_per_integer, int min_num_intervals, unsigned int nthreads, double df);
+    // 
+    // void computeFftGradientOneD(double *P, unsigned int *inp_row_P, unsigned int *inp_col_P, double *inp_val_P,
+    //                                 double *Y, int N, int D, double *dC, int n_interpolation_points,
+    //                                 double intervals_per_integer, int min_num_intervals, unsigned int nthreads);
 
     void computeExactGradient(double *P, double *Y, int N, int D, double *dC, double df);
 
@@ -89,7 +89,7 @@ private:
     double evaluateError(unsigned int *row_P, unsigned int *col_P, double *val_P, double *Y, int N, int D,
                          double theta, unsigned int nthreads);
 
-    double evaluateErrorFft(unsigned int *row_P, unsigned int *col_P, double *val_P, double *Y, int N, int D, unsigned int nthreads, double df);
+    // double evaluateErrorFft(unsigned int *row_P, unsigned int *col_P, double *val_P, double *Y, int N, int D, unsigned int nthreads, double df);
     void zeroMean(double *X, int N, int D);
 
 	double distances2similarities(double *D, double *P, int N, int n, double perplexity, double sigma, bool ifSquared);

@@ -21,3 +21,7 @@ update_grads_rcpp <- function(grads, ydata, stiffnesses) {
     .Call(`_CSOmapR_update_grads_rcpp`, grads, ydata, stiffnesses)
 }
 
+Rtsne_cpp <- function(X, N, D, Y, no_dims, perplexity, theta, rand_seed, skip_random_init, max_iter, stop_lying_iter, mom_switch_iter, momentum, final_momentum, learning_rate, K, sigma, knn_algo, early_exag_coeff, no_momentum_during_exag, start_late_exag_iter, late_exag_coeff, n_trees, search_k, nterms, intervals_per_integer, min_num_intervals, nthreads, load_affinities, perplexity_list_length, perplexity_list, df, max_step_norm) {
+    .Call(`_CSOmapR_Rtsne_cpp`, X, N, D, Y, no_dims, perplexity, theta, rand_seed, skip_random_init, max_iter, stop_lying_iter, mom_switch_iter, momentum, final_momentum, learning_rate, K, sigma, knn_algo, early_exag_coeff, no_momentum_during_exag, start_late_exag_iter, late_exag_coeff, n_trees, search_k, nterms, intervals_per_integer, min_num_intervals, nthreads, load_affinities, perplexity_list_length, perplexity_list, df, max_step_norm)
+}
+

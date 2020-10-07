@@ -30,10 +30,54 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// Rtsne_cpp
+Rcpp::List Rtsne_cpp(double X, int N, int D, double Y, int no_dims, double perplexity, double theta, int rand_seed, bool skip_random_init, int max_iter, int stop_lying_iter, int mom_switch_iter, double momentum, double final_momentum, double learning_rate, int K, double sigma, int knn_algo, double early_exag_coeff, bool no_momentum_during_exag, int start_late_exag_iter, double late_exag_coeff, int n_trees, int search_k, int nterms, double intervals_per_integer, int min_num_intervals, unsigned int nthreads, int load_affinities, int perplexity_list_length, double perplexity_list, double df, double max_step_norm);
+RcppExport SEXP _CSOmapR_Rtsne_cpp(SEXP XSEXP, SEXP NSEXP, SEXP DSEXP, SEXP YSEXP, SEXP no_dimsSEXP, SEXP perplexitySEXP, SEXP thetaSEXP, SEXP rand_seedSEXP, SEXP skip_random_initSEXP, SEXP max_iterSEXP, SEXP stop_lying_iterSEXP, SEXP mom_switch_iterSEXP, SEXP momentumSEXP, SEXP final_momentumSEXP, SEXP learning_rateSEXP, SEXP KSEXP, SEXP sigmaSEXP, SEXP knn_algoSEXP, SEXP early_exag_coeffSEXP, SEXP no_momentum_during_exagSEXP, SEXP start_late_exag_iterSEXP, SEXP late_exag_coeffSEXP, SEXP n_treesSEXP, SEXP search_kSEXP, SEXP ntermsSEXP, SEXP intervals_per_integerSEXP, SEXP min_num_intervalsSEXP, SEXP nthreadsSEXP, SEXP load_affinitiesSEXP, SEXP perplexity_list_lengthSEXP, SEXP perplexity_listSEXP, SEXP dfSEXP, SEXP max_step_normSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< double >::type X(XSEXP);
+    Rcpp::traits::input_parameter< int >::type N(NSEXP);
+    Rcpp::traits::input_parameter< int >::type D(DSEXP);
+    Rcpp::traits::input_parameter< double >::type Y(YSEXP);
+    Rcpp::traits::input_parameter< int >::type no_dims(no_dimsSEXP);
+    Rcpp::traits::input_parameter< double >::type perplexity(perplexitySEXP);
+    Rcpp::traits::input_parameter< double >::type theta(thetaSEXP);
+    Rcpp::traits::input_parameter< int >::type rand_seed(rand_seedSEXP);
+    Rcpp::traits::input_parameter< bool >::type skip_random_init(skip_random_initSEXP);
+    Rcpp::traits::input_parameter< int >::type max_iter(max_iterSEXP);
+    Rcpp::traits::input_parameter< int >::type stop_lying_iter(stop_lying_iterSEXP);
+    Rcpp::traits::input_parameter< int >::type mom_switch_iter(mom_switch_iterSEXP);
+    Rcpp::traits::input_parameter< double >::type momentum(momentumSEXP);
+    Rcpp::traits::input_parameter< double >::type final_momentum(final_momentumSEXP);
+    Rcpp::traits::input_parameter< double >::type learning_rate(learning_rateSEXP);
+    Rcpp::traits::input_parameter< int >::type K(KSEXP);
+    Rcpp::traits::input_parameter< double >::type sigma(sigmaSEXP);
+    Rcpp::traits::input_parameter< int >::type knn_algo(knn_algoSEXP);
+    Rcpp::traits::input_parameter< double >::type early_exag_coeff(early_exag_coeffSEXP);
+    Rcpp::traits::input_parameter< bool >::type no_momentum_during_exag(no_momentum_during_exagSEXP);
+    Rcpp::traits::input_parameter< int >::type start_late_exag_iter(start_late_exag_iterSEXP);
+    Rcpp::traits::input_parameter< double >::type late_exag_coeff(late_exag_coeffSEXP);
+    Rcpp::traits::input_parameter< int >::type n_trees(n_treesSEXP);
+    Rcpp::traits::input_parameter< int >::type search_k(search_kSEXP);
+    Rcpp::traits::input_parameter< int >::type nterms(ntermsSEXP);
+    Rcpp::traits::input_parameter< double >::type intervals_per_integer(intervals_per_integerSEXP);
+    Rcpp::traits::input_parameter< int >::type min_num_intervals(min_num_intervalsSEXP);
+    Rcpp::traits::input_parameter< unsigned int >::type nthreads(nthreadsSEXP);
+    Rcpp::traits::input_parameter< int >::type load_affinities(load_affinitiesSEXP);
+    Rcpp::traits::input_parameter< int >::type perplexity_list_length(perplexity_list_lengthSEXP);
+    Rcpp::traits::input_parameter< double >::type perplexity_list(perplexity_listSEXP);
+    Rcpp::traits::input_parameter< double >::type df(dfSEXP);
+    Rcpp::traits::input_parameter< double >::type max_step_norm(max_step_normSEXP);
+    rcpp_result_gen = Rcpp::wrap(Rtsne_cpp(X, N, D, Y, no_dims, perplexity, theta, rand_seed, skip_random_init, max_iter, stop_lying_iter, mom_switch_iter, momentum, final_momentum, learning_rate, K, sigma, knn_algo, early_exag_coeff, no_momentum_during_exag, start_late_exag_iter, late_exag_coeff, n_trees, search_k, nterms, intervals_per_integer, min_num_intervals, nthreads, load_affinities, perplexity_list_length, perplexity_list, df, max_step_norm));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_CSOmapR_calc_d_rcpp", (DL_FUNC) &_CSOmapR_calc_d_rcpp, 1},
     {"_CSOmapR_update_grads_rcpp", (DL_FUNC) &_CSOmapR_update_grads_rcpp, 3},
+    {"_CSOmapR_Rtsne_cpp", (DL_FUNC) &_CSOmapR_Rtsne_cpp, 33},
     {NULL, NULL, 0}
 };
 
