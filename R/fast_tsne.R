@@ -33,7 +33,7 @@
 #'           larger. min_num_intervals must be an integer >0, and intervals_per_integer must be >0. Default: min_num_intervals=50, intervals_per_integer = 1
 #' @param sigma Fixed sigma value to use when perplexity==-1 Default -1 (None)
 #' @param K Number of nearest neighbours to get when using fixed sigma Default -30 (None)
-#' @param initialization 'pca', 'random', or N x no_dims array to intialize the solution. Default: 'pca'.
+#' @param initialization 'random', or N x no_dims array to intialize the solution. Default: 'random'.
 #' @param load_affinities 
 #'            If 1, input similarities are loaded from a file and not computed
 #'            If 2, input similarities are saved into a file.
@@ -44,6 +44,7 @@
 #'       Values smaller than 1 correspond to heavier tails, which can often 
 #'       resolve substructure in the embedding. See Kobak et al. (2019) for
 #'       details. Default is 1.0
+#' @param verbose Print running infos for debugging.
 #' @export
 #
 Rtsne_run <- function(X, 
@@ -56,13 +57,13 @@ Rtsne_run <- function(X,
          mom_switch_iter = 250, momentum = 0.5, final_momentum = 0.8, learning_rate = 'auto',
 		     n_trees = 50, search_k = -1, rand_seed = -1,
 		     nterms = 3, intervals_per_integer = 1, min_num_intervals = 50, 
-		     K = -1, sigma = -30, initialization = NULL, max_step_norm = 5,
+		     K = -1, sigma = -30, initialization = "random", max_step_norm = 5,
 		     data_path = NULL, result_path = NULL,
 		     load_affinities = NULL,
 		     nthreads = 0, perplexity_list = NULL, 
-         get_costs = FALSE, df = 1.0) {
+         get_costs = FALSE, df = 1.0, 
+		     verbose = TRUE) {
   
-  version_number <- '1.2.1'
 
 	# if (is.null(fast_tsne_path)) {
 	# 	if (.Platform$OS.type == "unix") {
@@ -142,10 +143,11 @@ Rtsne_run <- function(X,
         #     }
         #         initialization <- 0.0001*(X_top_pcs/sd(X_top_pcs[,1])) 
         # 
-        # }else if (is.character(initialization) && initialization == 'random'){
-        #     message('Random initialization')
-        #     initialization = NULL
-        # }
+        # }else 
+	if (is.character(initialization) && initialization == 'random' ) {
+	  if(verbose) message('Random initialization')
+	  initialization = NULL
+	}
 
 	# if (fft_not_bh) {
 	#   nbody_algo <- 2
@@ -176,6 +178,7 @@ Rtsne_run <- function(X,
 	D <- ncol(X)
 	
 	# arrange args
+	if(verbose) message("Setting args ...")
 	tsne.args = list(
 	  X = tX, 
 	  N = as.integer(n),
@@ -206,17 +209,15 @@ Rtsne_run <- function(X,
 	  rand_seed = as.integer(rand_seed),
 	  df = as.numeric(df),
 	  load_affinities = as.integer(load_affinities),
-	  Y = initialization, 
+	  Y = ifelse(is.null(initialization), 0, initialization),  # use 0 as an empty value
 	  skip_random_init = ifelse(!is.null(initialization), F, T),
 	  stop_lying_iter = stop_early_exag_iter, 
-	  early_exag_coeff = exaggeration_factor
-	  # stop_early_exag_iter = as.integer(stop_early_exag_iter),
-	  # exaggeration_factor = as.numeric(exaggeration_factor)
+	  early_exag_coeff = exaggeration_factor,
+	  verbose = verbose
 	)
 	
-	# .., int stop_lying_iter, double early_exag_coeff, double *costs, ..
-	
 	# call function in tsneR2cpp.cpp
+	if(verbose) message("Now running cpp ...")
 	out <- do.call(Rtsne_cpp, tsne.args)
 	
 	return(out)

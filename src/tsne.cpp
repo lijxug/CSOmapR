@@ -117,19 +117,21 @@ int TSNE::run(double *X, int N, int D, double *Y, int no_dims, double perplexity
               bool no_momentum_during_exag, int start_late_exag_iter, double late_exag_coeff, int n_trees, int search_k,
               int nterms, double intervals_per_integer, int min_num_intervals, unsigned int nthreads, 
               int load_affinities, int perplexity_list_length, double *perplexity_list, double df,
-              double max_step_norm) {
+              double max_step_norm, bool verbose) {
 
     // Some logging messages
     if (N - 1 < 3 * perplexity) {
-        printf("Perplexity too large for the number of data points!\n");
+        if(verbose) {printf("Perplexity too large for the number of data points!\n");}
         exit(1);
     }
 
-    if (no_momentum_during_exag) {
-		printf("No momentum during the exaggeration phase.\n");
+    if (no_momentum_during_exag && verbose) {
+		  printf("No momentum during the exaggeration phase.\n");
     } else {
-        printf("Will use momentum during exaggeration phase\n");
+      printf("Will use momentum during exaggeration phase\n");
     }
+    
+    //Check dimension of X and Y
     
     // Determine whether we are using an exact algorithm
     bool exact = theta == .0;
@@ -222,10 +224,7 @@ int TSNE::run(double *X, int N, int D, double *Y, int no_dims, double perplexity
 			fwrite(P, sizeof(double), N * N, h);
 			fclose(h);
 		}
-	}
-
-	// Compute input similarities for approximate t-SNE
-    else {
+	} else {  // Compute input similarities for approximate t-SNE
 		// Loading input similarities if load_affinities == 1
 		if (load_affinities == 1) {
 			printf("Loading approximate input similarities from files...\n");
@@ -360,193 +359,175 @@ int TSNE::run(double *X, int N, int D, double *Y, int no_dims, double perplexity
 		}
 	}
 
-    // Set random seed
-    if (skip_random_init != true) {
-        if (rand_seed >= 0) {
-            printf("Using random seed: %d\n", rand_seed);
-            srand((unsigned int) rand_seed);
-        } else {
-            printf("Using current time as random seed...\n");
-            srand(time(NULL));
-        }
-    }
-
-    // Initialize solution (randomly)
-    if (skip_random_init != true) {
-		  printf("Randomly initializing the solution.\n");
-        for (int i = 0; i < N * no_dims; i++) Y[i] = randn() * .0001;
-	    printf("Y[0] = %lf\n", Y[0]);
-    } else {
-		  printf("Using the given initialization.\n");
-    }
-
-    // If we are doing early exaggeration, we pre-multiply all the P by the coefficient of early exaggeration
-    double max_sum_cols = 0;
-    // Compute maximum possible exaggeration coefficient, if user requests
-    if (early_exag_coeff == 0) {
-        for (int n = 0; n < N; n++) {
-            double running_sum = 0;
-            for (int i = row_P[n]; i < row_P[n + 1]; i++) {
-                running_sum += val_P[i];
-            }
-            if (running_sum > max_sum_cols) max_sum_cols = running_sum;
-        }
-        early_exag_coeff = (1.0 / (learning_rate * max_sum_cols));
-        printf("Max of the val_Ps is: %lf\n", max_sum_cols);
-    }
-
-    printf("Exaggerating Ps by %f\n", early_exag_coeff);
+  // Set random seed
+  if (skip_random_init == false) {
+      if (rand_seed >= 0) {
+          printf("Using random seed: %d\n", rand_seed);
+          srand((unsigned int) rand_seed);
+      } else {
+          printf("Using current time as random seed...\n");
+          srand(time(NULL));
+      }
+  }
+  // Initialize solution (randomly)
+  if (skip_random_init == false) {
+		printf("Randomly initializing the solution.\n");
+      for (int i = 0; i < N * no_dims; i++) Y[i] = randn() * .0001;
+	  printf("Y[0] = %lf\n", Y[0]);
+  } else {
+		printf("Using the given initialization.\n");
+  }
+  // If we are doing early exaggeration, we pre-multiply all the P by the coefficient of early exaggeration
+  double max_sum_cols = 0;
+  // Compute maximum possible exaggeration coefficient, if user requests
+  if (early_exag_coeff == 0) {
+      for (int n = 0; n < N; n++) {
+          double running_sum = 0;
+          for (int i = row_P[n]; i < row_P[n + 1]; i++) {
+              running_sum += val_P[i];
+          }
+          if (running_sum > max_sum_cols) max_sum_cols = running_sum;
+      }
+      early_exag_coeff = (1.0 / (learning_rate * max_sum_cols));
+      printf("Max of the val_Ps is: %lf\n", max_sum_cols);
+  }
+  printf("Exaggerating Ps by %f\n", early_exag_coeff);
+  if (exact) {
+      for (int i = 0; i < N * N; i++) {
+          P[i] *= early_exag_coeff;
+      }
+  } else {
+      for (int i = 0; i < row_P[N]; i++)
+          val_P[i] *= early_exag_coeff;
+  }
+  print_progress(0, Y, N, no_dims);
+  // Perform main training loop
+  if (exact) {
+      printf("Input similarities computed \nLearning embedding...\n");
+  } else {
+      printf("Input similarities computed (sparsity = %f)!\nLearning embedding...\n",
+             (double) row_P[N] / ((double) N * (double) N));
+  }
+  std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now();
+  
+  if (!exact) {
+      printf("Using the Barnes-Hut approximation.\n");
+  }
+  for (int iter = 0; iter < max_iter; iter++) {
+    itTest = iter;
     if (exact) {
-        for (int i = 0; i < N * N; i++) {
-            P[i] *= early_exag_coeff;
-        }
+        // Compute the exact gradient using full P matrix
+        computeExactGradient(P, Y, N, no_dims, dY,df);
     } else {
-        for (int i = 0; i < row_P[N]; i++)
-            val_P[i] *= early_exag_coeff;
+        // Otherwise, compute the negative gradient using the Barnes-Hut approximation
+        computeGradient(P, row_P, col_P, val_P, Y, N, no_dims, dY, theta, nthreads);
     }
-
-    print_progress(0, Y, N, no_dims);
-
-    // Perform main training loop
-    if (exact) {
-        printf("Input similarities computed \nLearning embedding...\n");
-    } else {
-        printf("Input similarities computed (sparsity = %f)!\nLearning embedding...\n",
-               (double) row_P[N] / ((double) N * (double) N));
+    if (measure_accuracy) {
+        computeGradient(P, row_P, col_P, val_P, Y, N, no_dims, dY, theta, nthreads);
+        computeExactGradientTest(Y, N, no_dims,df);
     }
-
-    std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now();
-    
-    if (!exact) {
-        printf("Using the Barnes-Hut approximation.\n");
-    }
-
-    for (int iter = 0; iter < max_iter; iter++) {
-        itTest = iter;
-
-        if (exact) {
-            // Compute the exact gradient using full P matrix
-            computeExactGradient(P, Y, N, no_dims, dY,df);
-        } else {
-            // Otherwise, compute the negative gradient using the Barnes-Hut approximation
-            computeGradient(P, row_P, col_P, val_P, Y, N, no_dims, dY, theta, nthreads);
-        }
-
-        if (measure_accuracy) {
-            computeGradient(P, row_P, col_P, val_P, Y, N, no_dims, dY, theta, nthreads);
-            computeExactGradientTest(Y, N, no_dims,df);
-        }
-
-        // We can turn off momentum/gains until after the early exaggeration phase is completed
-        if (no_momentum_during_exag) {
-            if (iter > stop_lying_iter) {
-                for (int i = 0; i < N * no_dims; i++)
-                    gains[i] = (sign(dY[i]) != sign(uY[i])) ? (gains[i] + .2) : (gains[i] * .8);
-                for (int i = 0; i < N * no_dims; i++) if (gains[i] < .01) gains[i] = .01;
-                for (int i = 0; i < N * no_dims; i++) uY[i] = momentum * uY[i] - learning_rate * gains[i] * dY[i];
-                for (int i = 0; i < N * no_dims; i++) Y[i] = Y[i] + uY[i];
-            } else {
-                // During early exaggeration or compression, no trickery (i.e. no momentum, or gains). Just good old
-                // fashion gradient descent
-                for (int i = 0; i < N * no_dims; i++) Y[i] = Y[i] - dY[i];
-            }
-        } else {
+    // We can turn off momentum/gains until after the early exaggeration phase is completed
+    if (no_momentum_during_exag) {
+        if (iter > stop_lying_iter) {
             for (int i = 0; i < N * no_dims; i++)
                 gains[i] = (sign(dY[i]) != sign(uY[i])) ? (gains[i] + .2) : (gains[i] * .8);
             for (int i = 0; i < N * no_dims; i++) if (gains[i] < .01) gains[i] = .01;
             for (int i = 0; i < N * no_dims; i++) uY[i] = momentum * uY[i] - learning_rate * gains[i] * dY[i];
-
-	    // Clip the step sizes if max_step_norm is provided
-            if (max_step_norm > 0) {
-                for (int i=0; i<N; i++) {
-                    double step = 0;
-                    for (int j=0; j<no_dims; j++) {
-                        step += uY[i*no_dims + j] * uY[i*no_dims + j];
-                    }
-                    step = sqrt(step);
-                    if (step > max_step_norm) {
-                        for (int j=0; j<no_dims; j++) {
-                            uY[i*no_dims + j] *= (max_step_norm/step);
-                        }
-		    }
-	        }
-            }
-
             for (int i = 0; i < N * no_dims; i++) Y[i] = Y[i] + uY[i];
+        } else {
+            // During early exaggeration or compression, no trickery (i.e. no momentum, or gains). Just good old
+            // fashion gradient descent
+            for (int i = 0; i < N * no_dims; i++) Y[i] = Y[i] - dY[i];
         }
-
-	      /* // Print step norms (for debugging)
-	      double maxstepnorm = 0;
-	      for (int i=0; i<N; i++) {
-	      	double step = 0;
-	      	for (int j=0; j<no_dims; j++) {
-	      		step += uY[i*no_dims + j] * uY[i*no_dims + j];
-	      	}
-	      	step = sqrt(step);
-	      	if (step > maxstepnorm) {
-	      		maxstepnorm = step;
-	      	}
-	      }
-	      printf("%d: %f\n", iter, maxstepnorm); */
-
-        // Make solution zero-mean
-        zeroMean(Y, N, no_dims);
-
-        // Switch off early exaggeration
-        if (iter == stop_lying_iter) {
-            printf("Unexaggerating Ps by %f\n", early_exag_coeff);
-            if (exact) { for (int i = 0; i < N * N; i++) P[i] /= early_exag_coeff; }
-            else { for (int i = 0; i < row_P[N]; i++) val_P[i] /= early_exag_coeff; }
-        }
-        if (iter == start_late_exag_iter) {
-            printf("Exaggerating Ps by %f\n", late_exag_coeff);
-            if (exact) { for (int i = 0; i < N * N; i++) P[i] *= late_exag_coeff; }
-            else { for (int i = 0; i < row_P[N]; i++) val_P[i] *= late_exag_coeff; }
-        }
-        if (iter == mom_switch_iter) momentum = final_momentum;
-
-        // Print out progress
-        if ((iter+1) % 50 == 0 || iter == max_iter - 1) {
-	INITIALIZE_TIME;
-        START_TIME;
-            double C = .0;
-            if (exact) {
-                C = evaluateError(P, Y, N, no_dims,df);
-            }else{
-                C = evaluateError(row_P, col_P, val_P, Y, N, no_dims,theta, nthreads);
-            }
-            
-            // Adjusting the KL divergence if exaggeration is currently turned on
-            // See https://github.com/pavlin-policar/fastTSNE/blob/master/notes/notes.pdf, Section 3.2
-            if (iter < stop_lying_iter && stop_lying_iter != -1) {
-                C = C/early_exag_coeff - log(early_exag_coeff);
-            }
-            if (iter >= start_late_exag_iter && start_late_exag_iter != -1) {
-                C = C/late_exag_coeff - log(late_exag_coeff);
-            }     
-
-            costs[iter] = C;       
-    END_TIME("Computing Error");
-            
-            std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
-            printf("Iteration %d (50 iterations in %.2f seconds), cost %f\n", iter+1, std::chrono::duration_cast<std::chrono::milliseconds>(now-start_time).count()/(float)1000.0, C);
-            start_time = std::chrono::steady_clock::now();
-        }
-    }
-
-    // Clean up memory
-    free(dY);
-    free(uY);
-    free(gains);
-
-    if (exact) {
-        free(P);
     } else {
-        free(row_P);
-        free(col_P);
-        free(val_P);
+        for (int i = 0; i < N * no_dims; i++)
+            gains[i] = (sign(dY[i]) != sign(uY[i])) ? (gains[i] + .2) : (gains[i] * .8);
+        for (int i = 0; i < N * no_dims; i++) if (gains[i] < .01) gains[i] = .01;
+        for (int i = 0; i < N * no_dims; i++) uY[i] = momentum * uY[i] - learning_rate * gains[i] * dY[i];
+  // Clip the step sizes if max_step_norm is provided
+        if (max_step_norm > 0) {
+            for (int i=0; i<N; i++) {
+                double step = 0;
+                for (int j=0; j<no_dims; j++) {
+                    step += uY[i*no_dims + j] * uY[i*no_dims + j];
+                }
+                step = sqrt(step);
+                if (step > max_step_norm) {
+                    for (int j=0; j<no_dims; j++) {
+                        uY[i*no_dims + j] *= (max_step_norm/step);
+                    }
     }
-    return 0;
+      }
+        }
+        for (int i = 0; i < N * no_dims; i++) Y[i] = Y[i] + uY[i];
+    }
+    /* // Print step norms (for debugging)
+    double maxstepnorm = 0;
+    for (int i=0; i<N; i++) {
+    	double step = 0;
+    	for (int j=0; j<no_dims; j++) {
+    		step += uY[i*no_dims + j] * uY[i*no_dims + j];
+    	}
+    	step = sqrt(step);
+    	if (step > maxstepnorm) {
+    		maxstepnorm = step;
+    	}
+    }
+    printf("%d: %f\n", iter, maxstepnorm); */
+    // Make solution zero-mean
+    zeroMean(Y, N, no_dims);
+    // Switch off early exaggeration
+    if (iter == stop_lying_iter) {
+        printf("Unexaggerating Ps by %f\n", early_exag_coeff);
+        if (exact) { for (int i = 0; i < N * N; i++) P[i] /= early_exag_coeff; }
+        else { for (int i = 0; i < row_P[N]; i++) val_P[i] /= early_exag_coeff; }
+    }
+    if (iter == start_late_exag_iter) {
+        printf("Exaggerating Ps by %f\n", late_exag_coeff);
+        if (exact) { for (int i = 0; i < N * N; i++) P[i] *= late_exag_coeff; }
+        else { for (int i = 0; i < row_P[N]; i++) val_P[i] *= late_exag_coeff; }
+    }
+    if (iter == mom_switch_iter) momentum = final_momentum;
+    // Print out progress
+    if ((iter+1) % 50 == 0 || iter == max_iter - 1) {
+      INITIALIZE_TIME;
+      START_TIME;
+          double C = .0;
+          if (exact) {
+              C = evaluateError(P, Y, N, no_dims,df);
+          }else{
+              C = evaluateError(row_P, col_P, val_P, Y, N, no_dims,theta, nthreads);
+          }
+          
+          // Adjusting the KL divergence if exaggeration is currently turned on
+          // See https://github.com/pavlin-policar/fastTSNE/blob/master/notes/notes.pdf, Section 3.2
+          if (iter < stop_lying_iter && stop_lying_iter != -1) {
+              C = C/early_exag_coeff - log(early_exag_coeff);
+          }
+          if (iter >= start_late_exag_iter && start_late_exag_iter != -1) {
+              C = C/late_exag_coeff - log(late_exag_coeff);
+          }
+          costs[iter] = C;       
+      END_TIME("Computing Error");
+          
+          std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+          printf("Iteration %d (50 iterations in %.2f seconds), cost %f\n", iter+1, std::chrono::duration_cast<std::chrono::milliseconds>(now-start_time).count()/(float)1000.0, C);
+          start_time = std::chrono::steady_clock::now();
+    }
+  }
+
+  // Clean up memory
+  free(dY);
+  free(uY);
+  free(gains);
+  if (exact) {
+      free(P);
+  } else {
+      free(row_P);
+      free(col_P);
+      free(val_P);
+  }
+  return 0;
 }
 
 

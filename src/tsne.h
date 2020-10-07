@@ -45,7 +45,7 @@ public:
             int knn_algo, double early_exag_coeff, double *costs,
             bool no_momentum_during_exag, int start_late_exag_iter, double late_exag_coeff, int n_trees, int search_k,
             int nterms, double intervals_per_integer, int min_num_intervals, unsigned int nthreads, int load_affinities,
-            int perplexity_list_length, double *perplexity_list, double df, double max_step_norm);
+            int perplexity_list_length, double *perplexity_list, double df, double max_step_norm, bool verbose);
 
     // bool load_data(const char *data_path, double **data, double **Y, int *n, int *d, int *no_dims, double *theta,
     //         double *perplexity, int *rand_seed, int *max_iter, int *stop_lying_iter, 

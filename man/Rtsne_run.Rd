@@ -28,7 +28,7 @@ Rtsne_run(
   min_num_intervals = 50,
   K = -1,
   sigma = -30,
-  initialization = NULL,
+  initialization = "random",
   max_step_norm = 5,
   data_path = NULL,
   result_path = NULL,
@@ -36,7 +36,8 @@ Rtsne_run(
   nthreads = 0,
   perplexity_list = NULL,
   get_costs = FALSE,
-  df = 1
+  df = 1,
+  verbose = TRUE
 )
 }
 \arguments{
@@ -79,7 +80,7 @@ larger. min_num_intervals must be an integer >0, and intervals_per_integer must 
 
 \item{sigma}{Fixed sigma value to use when perplexity==-1 Default -1 (None)}
 
-\item{initialization}{'pca', 'random', or N x no_dims array to intialize the solution. Default: 'pca'.}
+\item{initialization}{'random', or N x no_dims array to intialize the solution. Default: 'random'.}
 
 \item{max_step_norm}{Maximum distance that a point is allowed to move on
 one iteration. Larger steps are clipped to this value. This prevents
@@ -97,6 +98,8 @@ be used with values taken from perplexity_list. Default: NULL}
 Values smaller than 1 correspond to heavier tails, which can often 
 resolve substructure in the embedding. See Kobak et al. (2019) for
 details. Default is 1.0}
+
+\item{verbose}{Print running infos for debugging.}
 }
 \description{
 Compute FIt-SNE of a dataset
