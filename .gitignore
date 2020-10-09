@@ -46,3 +46,6 @@ vignettes/*.pdf
 
 # Ignore data-raw
 /data-raw/
+
+# Ignore tmp data .dat
+**.dat
