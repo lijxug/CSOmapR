@@ -13,23 +13,23 @@ load_FItSNE = function(path2fast_tsneR = NULL){
 #'            If 'load', input similarities will be loaded from the file.
 #'            If 'save', input similarities are saved into a file.
 #'            If 0 or NULL(default), affinities are neither saved nor loaded
-#' @param ... include all the following fields that passed to fast_tsne
+#' @param ... include all the following fields that will be passed to fast_tsne
 #' @param X data matrix 
 #' @param dims dimensionality of the embedding. Default 2. 
 #' @param perplexity perplexity is used to determine the bandwidth of the Gaussian kernel in the input space. Default 30.                                                   
 #' @param theta Set to 0 for exact.  If non-zero, then will use either Barnes Hut or FIt-SNE based on nbody_algo. If Barnes Hut, then                                       
 #'           this determins the accuracy of BH approximation. Default 0.5.                                                                                                  
-#' @param max_iter Number of iterations of t-SNE to run. Default 750.                                                                                                       
+#' @param max_iter Number of iterations of t-SNE to run. Default 1000.
 #' @param ann_not_vptree use vp-trees (as in bhtsne) or approximate nearest neighbors (default).                                                                            
 #'            set to be True for approximate nearest neighbors                                                                                                              
-#' @param exaggeration_factor coefficient for early exaggeration (>1). Default 12.                                                                                          
+#' @param exaggeration_factor coefficient for early exaggeration (>1). Default = 1, not used.
 #' @param no_momentum_during_exag Set to 0 to use momentum and other optimization tricks. 1 to do plain,vanilla                                                             
 #'           gradient descent (useful for testing large exaggeration coefficients)                                                                                          
 #' @param stop_early_exag_iter When to switch off early exaggeration. Default 250.                                                                                          
 #' @param start_late_exag_iter When to start late exaggeration. 'auto' means that late exaggeration is not used, unless late_exag_coeff>0. In that                          
 #'        case, start_late_exag_iter is set to stop_early_exag_iter. Otherwise, set to equal the iteration at which late exaggeration should begin. Default 'auto'.         
 #' @param late_exag_coeff Late exaggeration coefficient. Set to -1 to not use late exaggeration. Default -1          
-#' #' @param learning_rate Set to desired learning rate or 'auto', which sets learning rate to N/exaggeration_factor where N is the sample size, or to 200 if                  
+#' @param learning_rate Set to desired learning rate or 'auto', which sets learning rate to N/exaggeration_factor where N is the sample size, or to 200 if                  
 #'       N/exaggeration_factor < 200. Default 'auto'                                                                                                                        
 #' @param max_step_norm Maximum distance that a point is allowed to move on                                                                                                 
 #'       one iteration. Larger steps are clipped to this value. This prevents                                                                                               
@@ -62,14 +62,14 @@ run_tSNE = function(path2fast_tsneR = NULL,
   args$dims = ifelse(is.null(args$dims), 2, args$dims)
   args$perplexity = ifelse(is.null(args$perplexity), 30, args$perplexity)
   args$theta = ifelse(is.null(args$theta), 0.5, args$theta)
-  args$max_iter = ifelse(is.null(args$max_iter), 750, args$max_iter)
+  args$max_iter = ifelse(is.null(args$max_iter), 1000, args$max_iter)
   args$fft_not_bh = ifelse(is.null(args$fft_not_bh), FALSE, args$fft_not_bh)
   args$ann_not_vptree = ifelse(is.null(args$ann_not_vptree), TRUE, args$ann_not_vptree)
   args$stop_early_exag_iter = ifelse(is.null(args$stop_early_exag_iter),
                                      250,
                                      args$stop_early_exag_iter)
   args$exaggeration_factor = ifelse(is.null(args$exaggeration_factor),
-                                    12.0,
+                                    1,
                                     args$exaggeration_factor)
   args$no_momentum_during_exag = ifelse(is.null(args$no_momentum_during_exag),
                                         FALSE,
@@ -77,7 +77,7 @@ run_tSNE = function(path2fast_tsneR = NULL,
   args$start_late_exag_iter = ifelse(is.null(args$start_late_exag_iter),
                                      -1 ,
                                      args$start_late_exag_iter)
-  args$late_exag_coeff = ifelse(is.null(args$late_exag_coeff), 1.0, args$late_exag_coeff)
+  args$late_exag_coeff = ifelse(is.null(args$late_exag_coeff), -1, args$late_exag_coeff)
   args$mom_switch_iter = ifelse(is.null(args$mom_switch_iter), 250 , args$mom_switch_iter)
   args$momentum = ifelse(is.null(args$momentum), 0.5 , args$momentum)
   args$final_momentum = ifelse(is.null(args$final_momentum), 0.8 , args$final_momentum)
@@ -104,7 +104,7 @@ run_tSNE = function(path2fast_tsneR = NULL,
   args$df = ifelse(is.null(args$df), 1.0, args$df)
   
   if (!is.null(args$load_affinities)) {
-    # save X as
+    # regarded input X as precomputed affinity matrix and output as the fast_tsne requested
     if (args$load_affinities == "precomputed") {
       if (is.null(args$X)) {
         stop("Empty data slot.")
@@ -112,15 +112,73 @@ run_tSNE = function(path2fast_tsneR = NULL,
       if (args$theta == 0) {
         # only support exact tSNE
         if (verbose) {
-          message(paste0("saving affinity matrix to:", "P.dat"))
+          message(paste0("Saving affinity matrix to:", "P.dat"))
         }
         f <- file("P.dat", "wb")
         writeBin(as.numeric(args$X), f)
         close(f)
         args$load_affinities = "load" # rewrite for passing to fast_tsne
       } else {
-        # BH affinity format not known yet
-        args$load_affinities = NULL
+       
+        # row_P = ones([size(P,1)+1,1],'uint32');
+        # col_P = ones([1,1],'uint32');
+        # val_P = zeros([1,1], 'double');
+        # k = 0;
+        # for i = 1:size(P,1)
+        #   row_P(i, 1) = k;
+        #   for j = 1:size(P,1)
+        #     if P(i,j) ~= 0 
+        #       col_P(k+1, 1) = j;
+        #       val_P(k+1, 1) = P(i, j);
+        #       k = k+1;
+        #     end
+        #   end
+        # end
+        # row_P(size(P,1)+1,1) = k;
+        
+        if (verbose) {
+          message(paste0("Saving affinity matrix to:", "val/row/col_P.dat"))
+        }
+        P = args$X
+        
+        tic()
+        min_P = min(P) # min_P can be specified in the future, to be modified
+        num_notZero = sum(P > min_P) # the minimum values were ignored and recognized as zero
+        row_P = rep(0L, nrow(P) + 1)
+        col_P = rep(0L, num_notZero)
+        val_P = rep(0, num_notZero)
+        
+        k = 0
+        for(i in 1:nrow(P)){
+          row_P[i] = k
+          for(j in 1:ncol(P)){
+            if(P[i,j] != min_P){
+              col_P[k] = j
+              val_P[k] = P[i, j]
+              k = k+1
+            }
+          }
+        }
+        row_P[i+1] = k
+        toc()
+        
+        row_P = as.integer(row_P)
+        col_P = as.integer(col_P)
+        
+        # write .dat
+        f <- file("P_row.dat", "wb")
+        writeBin(row_P, f)
+        close(f)
+        
+        f <- file("P_col.dat", "wb")
+        writeBin(col_P, f)
+        close(f)
+        
+        f <- file("P_val.dat", "wb")
+        writeBin(val_P, f)
+        close(f)
+        
+        args$load_affinities = "load"
       }
     }
   }

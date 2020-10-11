@@ -183,9 +183,10 @@ optimization_origin <-
     # ydata = matrix(rnorm(k * n), n)
     ydata = (matrix(runif(k * n), n) - 0.5) * 50
   }
-  P = 0.5 * (affinityMat + t(affinityMat))
-  P[P < eps] <- eps
-  P = P/sum(P)
+  P = affinityMat
+  # P = 0.5 * (affinityMat + t(affinityMat))
+  # P[P < eps] <- eps
+  # P = P/sum(P)
   grads = matrix(0, nrow(ydata), ncol(ydata))
   incs = matrix(0, nrow(ydata), ncol(ydata))
   gains = matrix(1, nrow(ydata), ncol(ydata))
@@ -288,9 +289,10 @@ optimization <-
       # ydata = matrix(rnorm(k * n), n)
       ydata = (matrix(runif(k * n), n) - 0.5) * 50
     }
-    P = 0.5 * (affinityMat + t(affinityMat))
-    P[P < eps] <- eps
-    P = P / sum(P)
+    P = affinityMat
+    # P = 0.5 * (affinityMat + t(affinityMat))
+    # P[P < eps] <- eps
+    # P = P / sum(P)
     grads = matrix(0, nrow(ydata), ncol(ydata))
     incs = matrix(0, nrow(ydata), ncol(ydata))
     gains = matrix(1, nrow(ydata), ncol(ydata))
@@ -347,11 +349,19 @@ optimization <-
 #' @param TPM a TPM matrix with gene names as rownames and cell names as colnames
 #' @param LR a dataframe/tibble record the information of ligand receptor pairs, 
 #' have to have colnames "ligand", "receptor" and an optional third column with weights
+#' 
 #' @param denoise numeric value, 
+#' @param eps Minimum distances between cells
 #' @param verbose logical. If TRUE, print out the progress information
 #' @export
 #' 
-getAffinityMat = function(TPM, LR, denoise = 50, verbose = F, ...) {
+getAffinityMat = function(TPM,
+                          LR,
+                          denoise = 50,
+                          eps = 2.2251e-308,
+                          verbose = F,
+                          ...) {
+  
   genenames = rownames(TPM)
   cellnames = colnames(TPM)
   
@@ -396,7 +406,13 @@ getAffinityMat = function(TPM, LR, denoise = 50, verbose = F, ...) {
     affinityArray[affinityArray <= affinityArraySorted[denoise]] = 0
     affinityMat[i, ] = affinityArray
   }
-  affinityMat
+  
+  # symmetrize P-values
+  P = 0.5 * (affinityMat + t(affinityMat))
+  P[P < eps] <- eps
+  # normalize 
+  P = P/sum(P)
+  return(P)
 }
 
 #' Calculate 3D coordinates from expression

@@ -4,7 +4,7 @@
 \alias{getAffinityMat}
 \title{Get affinityMatrix}
 \usage{
-getAffinityMat(TPM, LR, denoise = 50, verbose = F, ...)
+getAffinityMat(TPM, LR, denoise = 50, eps = 2.2251e-308, verbose = F, ...)
 }
 \arguments{
 \item{TPM}{a TPM matrix with gene names as rownames and cell names as colnames}
@@ -13,6 +13,8 @@ getAffinityMat(TPM, LR, denoise = 50, verbose = F, ...)
 have to have colnames "ligand", "receptor" and an optional third column with weights}
 
 \item{denoise}{numeric value,}
+
+\item{eps}{Minimum distances between cells}
 
 \item{verbose}{logical. If TRUE, print out the progress information}
 }

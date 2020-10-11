@@ -11,7 +11,7 @@ run_tSNE(path2fast_tsneR = NULL, fast_tsne_path = NULL, verbose = T, ...)
 
 \item{verbose}{Print running infos for debugging.}
 
-\item{...}{include all the following fields that passed to fast_tsne}
+\item{...}{include all the following fields that will be passed to fast_tsne}
 
 \item{path2fast_tsne}{a string specify the fast_tsne.R from FIt-SNE}
 
@@ -31,12 +31,12 @@ If 0 or NULL(default), affinities are neither saved nor loaded}
 \item{theta}{Set to 0 for exact.  If non-zero, then will use either Barnes Hut or FIt-SNE based on nbody_algo. If Barnes Hut, then
 this determins the accuracy of BH approximation. Default 0.5.}
 
-\item{max_iter}{Number of iterations of t-SNE to run. Default 750.}
+\item{max_iter}{Number of iterations of t-SNE to run. Default 1000.}
 
 \item{ann_not_vptree}{use vp-trees (as in bhtsne) or approximate nearest neighbors (default).
 set to be True for approximate nearest neighbors}
 
-\item{exaggeration_factor}{coefficient for early exaggeration (>1). Default 12.}
+\item{exaggeration_factor}{coefficient for early exaggeration (>1). Default = 1, not used.}
 
 \item{no_momentum_during_exag}{Set to 0 to use momentum and other optimization tricks. 1 to do plain,vanilla
 gradient descent (useful for testing large exaggeration coefficients)}
@@ -46,9 +46,10 @@ gradient descent (useful for testing large exaggeration coefficients)}
 \item{start_late_exag_iter}{When to start late exaggeration. 'auto' means that late exaggeration is not used, unless late_exag_coeff>0. In that
 case, start_late_exag_iter is set to stop_early_exag_iter. Otherwise, set to equal the iteration at which late exaggeration should begin. Default 'auto'.}
 
-\item{late_exag_coeff}{Late exaggeration coefficient. Set to -1 to not use late exaggeration. Default -1
-#' @param learning_rate Set to desired learning rate or 'auto', which sets learning rate to N/exaggeration_factor where N is the sample size, or to 200 if                  
-      N/exaggeration_factor < 200. Default 'auto'}
+\item{late_exag_coeff}{Late exaggeration coefficient. Set to -1 to not use late exaggeration. Default -1}
+
+\item{learning_rate}{Set to desired learning rate or 'auto', which sets learning rate to N/exaggeration_factor where N is the sample size, or to 200 if
+N/exaggeration_factor < 200. Default 'auto'}
 
 \item{max_step_norm}{Maximum distance that a point is allowed to move on
 one iteration. Larger steps are clipped to this value. This prevents                                                                                               
