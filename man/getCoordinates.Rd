@@ -2,21 +2,23 @@
 % Please edit documentation in R/utils.R
 \name{getCoordinates}
 \alias{getCoordinates}
-\title{Calculate 3D coordinates from expression}
+\title{Calculate 3D coordinates from expression
+A wrapper function to get 3D coordinates directly from expression}
 \usage{
-getCoordinates(TPM, LR, optimization = "Rcpp", verbose = F, ...)
+getCoordinates(TPM, LR, method = "tSNE", verbose = F, ...)
 }
 \arguments{
-\item{TPM}{a TPM matrix with gene names as rownames and cell names as colnames}
+\item{TPM}{TPM matrix, with gene names as rownames and cell names as colnames}
 
-\item{LR}{a dataframe/tibble record the information of ligand receptor pairs, have to have colnames "ligand" and "receptor"}
+\item{LR}{dataframe/tibble; record the information of ligand receptor pairs, have to have colnames "ligand" and "receptor"}
+
+\item{method}{string; sepcify the optimization method to use. Can be one of 'Rcpp', 'tSNE' or 'BHtSNE'.}
 
 \item{verbose}{logical. If TRUE, print out the progress information}
 
-\item{...}{arguments passsed to optimization}
-
-\item{optimiztion}{a string sepcify the optimization method to use. Can be one of 'origin.R','Rcpp', 'tSNE' or 'umap'.}
+\item{...}{arguments passsed to different optimization method}
 }
 \description{
 Calculate 3D coordinates from expression
+A wrapper function to get 3D coordinates directly from expression
 }

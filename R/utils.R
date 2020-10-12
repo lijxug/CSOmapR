@@ -319,10 +319,16 @@ getCoordinates = function(TPM, LR, method = 'tSNE', verbose = F, ...) {
   affinityMat = getAffinityMat(TPM, LR)
   # optimization
   if(verbose) loginfo("Optimizing coordinates")
-  if(method = 'Rcpp'){
+  if(method == 'Rcpp'){
     coords <- optimization(affinityMat, verbose = verbose, ...)
   } else if(method == 'tSNE'){
-    
+    coords_res = runExactTSNE_R(
+      X = affinityMat,
+      no_dims = 3,
+      max_iter = 1000,
+      verbose = verbose
+    )
+    coords = coords_res$Y
   }
   rownames(coords) <- colnames(TPM)
   colnames(coords) <- c('x', 'y', 'z')

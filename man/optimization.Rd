@@ -2,7 +2,11 @@
 % Please edit documentation in R/utils.R
 \name{optimization}
 \alias{optimization}
-\title{Optimize the 3D coordinates(cpp)}
+\title{Optimize the 3D coordinates(cpp)
+This function is inspired from tsne algorithm. We use similar gradient descent 
+method to optimize our target function specified in our paper. 
+condition can be loose or tight, we suggest using "loose" condition 
+for dataset with over 10000 cells}
 \usage{
 optimization(
   affinityMat,
@@ -54,6 +58,7 @@ optimization(
 a matrix of optimized 3D coordinates
 }
 \description{
+Optimize the 3D coordinates(cpp)
 This function is inspired from tsne algorithm. We use similar gradient descent 
 method to optimize our target function specified in our paper. 
 condition can be loose or tight, we suggest using "loose" condition 

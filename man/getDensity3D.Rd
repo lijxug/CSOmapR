@@ -2,15 +2,19 @@
 % Please edit documentation in R/utils.R
 \name{getDensity3D}
 \alias{getDensity3D}
-\title{get 3D density}
+\title{get 3D density
+Estimate 3D density around each data point based on coordinates.}
 \usage{
 getDensity3D(x, y, z, n = 100, ...)
 }
 \arguments{
 \item{x, y, z}{coordinates}
 
-\item{n}{numbers of grid points to use for each dimension; recycled if length is less than 3.}
+\item{n}{numbers of grid points to use for each dimension; recycled if length is less than 3. Default 100.}
+
+\item{...}{other parameters passed to kde3d}
 }
 \description{
-Wrapper for misc3d::kde3d to get density estimation
+get 3D density
+Estimate 3D density around each data point based on coordinates.
 }

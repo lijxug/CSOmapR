@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{getAffinityMat}
 \alias{getAffinityMat}
-\title{Get affinityMatrix}
+\title{Calculate affinity matrix}
 \usage{
 getAffinityMat(TPM, LR, denoise = 50, eps = 2.2251e-308, verbose = F, ...)
 }
@@ -19,5 +19,5 @@ have to have colnames "ligand", "receptor" and an optional third column with wei
 \item{verbose}{logical. If TRUE, print out the progress information}
 }
 \description{
-Get affinityMatrix
+Calculate affinity matrix
 }
