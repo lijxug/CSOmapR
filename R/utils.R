@@ -13,8 +13,6 @@
 #' @return A list contains coordinates, counts, p values and q values
 #' 
 getSignificance = function(coordinates, labels, k = 3, adjusted.method = "fdr", verbose = F) {
-  require(reshape2)
-  require(dplyr)
   # preprocess
   labels = setNames(labels, nm = rownames(coordinates))
   standards <- unique(labels)
@@ -130,116 +128,7 @@ getSignificance = function(coordinates, labels, k = 3, adjusted.method = "fdr", 
 }
 
 
-#' Optimize the 3D coordinates(origin)
-#' 
-#' this function is inspired from tsne algorithm. We use similar gradient descent 
-#' method to optimize our target function specified in our paper. 
-#' condition can be loose or tight, we suggest using "loose" condition 
-#' for dataset with over 10000 cells 
-#' @param affinityMat affinity matrix
-#' @param initial_config initial configuration
-#' @param k k cells 
-#' @param max_iter Maximum iteration time
-#' @param min_cost Minimum cost
-#' @param condition A string, either 'loss' or 'tight'
-#' @param momentum initial momentum, default = 0.5
-#' @param final_momentum final momentum, default = 0.8
-#' @param mom_switch_iter value to which momentum is changed, default = 250
-#' @param epsilon initial learning rate, default = 1000
-#' @param min_gain minimum gain for delta-bar-delta, default = 0.01
-#' @param eps Minimum distances between cells
-#' @param epoch numeric, print out lost funciton cost after every *epoch* iterations
-#' @param verbose logical. If TRUE, print out the progress information
-#' @return a matrix of optimized 3D coordinates
-#' 
-optimization_origin <-
-  function (affinityMat,
-            initial_config = NULL,
-            k = 3,
-            max_iter = 1000,
-            min_cost = 0,
-            condition = "tight",
-            momentum = 0.5, 
-            final_momentum = 0.8, 
-            mom_switch_iter = 250, 
-            epsilon = 1000, 
-            min_gain = 0.01,
-            eps = 2.2251e-308,
-            epoch = 100,
-            verbose = F) 
-{ # this function is inspired from tsne algorithm. We use similar gradient descent
-  # method to optimize our target function specified in our paper.
-  # condition can be loose or tight, we suggest using "loose" condition 
-  # for dataset with over 10000 cells
-  n = dim(affinityMat)[1]
-  if (!is.null(initial_config) && is.matrix(initial_config)) {
-    if (nrow(initial_config) != n | ncol(initial_config) != 
-        k) {
-      stop("initial_config argument does not match necessary configuration for X")
-    }
-    ydata = initial_config
-  }
-  else {
-    # ydata = matrix(rnorm(k * n), n)
-    ydata = (matrix(runif(k * n), n) - 0.5) * 50
-  }
-  P = affinityMat
-  # P = 0.5 * (affinityMat + t(affinityMat))
-  # P[P < eps] <- eps
-  # P = P/sum(P)
-  grads = matrix(0, nrow(ydata), ncol(ydata))
-  incs = matrix(0, nrow(ydata), ncol(ydata))
-  gains = matrix(1, nrow(ydata), ncol(ydata))
-  for (iter in 1:max_iter) {
-    
-    sum_ydata = apply(ydata^2, 1, sum)
-    d = sum_ydata + sweep(-2 * ydata %*% t(ydata), 2, -t(sum_ydata))
-    num = 1/(1 + d)
-    diag(num) = 0
-    Q = num/sum(num)
-    if (any(is.nan(num))) 
-      message("NaN in grad. descent")
-    Q[Q < eps] = eps
-    P_Q = P - Q
-    P_Q[P_Q > 0 & d <= 0.01] = -0.01;
-    stiffnesses = 4 * (P - Q) * num
-    # stiffnesses = 4 * P_Q * num
-    for (i in 1:n) {
-      grads[i, ] = apply(sweep(-ydata, 2, -ydata[i, ]) * 
-                           stiffnesses[, i], 2, sum)
-    }
-    gains = ((gains + 0.2) * abs(sign(grads) != sign(incs)) + 
-               gains * 0.8 * abs(sign(grads) == sign(incs)))
-    gains[gains < min_gain] = min_gain
-    incs = momentum * incs - epsilon * (gains * grads)
-    ydata = ydata + incs
-    ydata = sweep(ydata, 2, apply(ydata, 2, mean))
-    if (iter == mom_switch_iter) 
-      momentum = final_momentum
-    if (iter%%epoch == 0) {
-      cost = sum(apply(P * log((P + eps)/(Q + eps)), 1, 
-                       sum))
-      message("Iteration #", iter, " loss function cost is: ", 
-              cost)
-      if (cost < min_cost) 
-        break
-    }
-    range = max(abs(ydata))
-    if (condition == "tight") {
-      if (range > 50 && iter%%10 == 0) {
-        ydata = ydata * 50/range
-      }
-    } else {
-      if (range > 50 && iter%%max_iter == 0) {
-        ydata = ydata * 50/range
-      }
-    }
-  }
-  ydata
-}
-
 #' Optimize the 3D coordinates(cpp)
-#' 
 #' This function is inspired from tsne algorithm. We use similar gradient descent 
 #' method to optimize our target function specified in our paper. 
 #' condition can be loose or tight, we suggest using "loose" condition 
@@ -345,7 +234,7 @@ optimization <-
     ydata
   }
 
-#' Get affinityMatrix
+#' Calculate affinity matrix
 #' @param TPM a TPM matrix with gene names as rownames and cell names as colnames
 #' @param LR a dataframe/tibble record the information of ligand receptor pairs, 
 #' have to have colnames "ligand", "receptor" and an optional third column with weights
@@ -416,28 +305,24 @@ getAffinityMat = function(TPM,
 }
 
 #' Calculate 3D coordinates from expression
-#'
-#' @param TPM a TPM matrix with gene names as rownames and cell names as colnames
-#' @param LR a dataframe/tibble record the information of ligand receptor pairs, have to have colnames "ligand" and "receptor"
-#' @param optimiztion a string sepcify the optimization method to use. Can be one of 'origin.R','Rcpp', 'tSNE' or 'umap'.
+#' A wrapper function to get 3D coordinates directly from expression
+#' @param TPM TPM matrix, with gene names as rownames and cell names as colnames
+#' @param LR dataframe/tibble; record the information of ligand receptor pairs, have to have colnames "ligand" and "receptor"
+#' @param method string; sepcify the optimization method to use. Can be one of 'Rcpp', 'tSNE' or 'BHtSNE'.
 #' @param verbose logical. If TRUE, print out the progress information
-#' @param ... arguments passsed to optimization
+#' @param ... arguments passsed to different optimization method
 #' @export
 #' 
 #'
-getCoordinates = function(TPM, LR, optimization = 'Rcpp', verbose = F, ...) {
+getCoordinates = function(TPM, LR, method = 'tSNE', verbose = F, ...) {
   # Get affinity
   affinityMat = getAffinityMat(TPM, LR)
   # optimization
   if(verbose) loginfo("Optimizing coordinates")
-  if(version == 'origin'){
-    coords <- optimization_origin(affinityMat, verbose = verbose, ...)
-  } else if(version == "tSNE"){
-    coords = Rtsne::Rtsne(affinityMat, ...)
-  } else if(version == "umap"){
-    coords = umap::umap(affinityMat, ...)
-  } else {
+  if(method = 'Rcpp'){
     coords <- optimization(affinityMat, verbose = verbose, ...)
+  } else if(method == 'tSNE'){
+    
   }
   rownames(coords) <- colnames(TPM)
   colnames(coords) <- c('x', 'y', 'z')
@@ -490,23 +375,6 @@ getContribution = function(TPM, LR, detailed_connections){
   return(LR_contri_lst)
 }
 
-
-# Calculations: R version ----
-calc_d = function(ydata) {
-  sum_ydata = apply(ydata ^ 2, 1, sum)
-  d = sum_ydata + sweep(-2 * ydata %*% t(ydata), 2,-t(sum_ydata))
-  # d = sum_ydata + sweep(-2*tcrossprod(ydata), 2,-sum_ydata)
-  return(d)
-}
-
-update_grads = function(grads, ydata, stiffnesses) {
-  for (i in 1:nrow(grads)) {
-    grads[i, ] = apply(sweep(-ydata, 2, -ydata[i, ]) *
-                         stiffnesses[, i], 2, sum)
-  }
-  return(grads)
-}
-
 # Density ----
 #' get 3D density
 #' 
@@ -516,13 +384,12 @@ update_grads = function(grads, ydata, stiffnesses) {
 #' @param n numbers of grid points to use for each dimension; recycled if length is less than 3.
 #' @export
 getDensity3D = function(x, y, z, n = 100, ...) {
-  require(misc3d)
   tryCatch({
-    dens <- misc3d::kde3d(x = x, y = y, z =z, n = n, ...)
+    dens <- kde3d(x = x, y = y, z =z, n = n, ...)
   }, error = function(e) {
     print(e)
     warning("Swith bandwidth to h = 1")
-    dens <<- MASS::kde2d(x = x,
+    dens <<- kde2d(x = x,
                          y = y,
                          n = n,
                          h = 1)
@@ -533,6 +400,65 @@ getDensity3D = function(x, y, z, n = 100, ...) {
   ii <- cbind(ix, iy, iz)
   return(dens$d[ii])
 }
+
+
+# function adapted from R package misc3d
+# https://cran.r-project.org/web/packages/misc3d/index.html
+kde3d = function (x, y, z, h, n = 20, lims = c(range(x), range(y), range(z))) 
+{
+  nx <- length(x)
+  if (length(y) != nx || length(z) != nx) 
+    stop("data vectors must be the same length")
+  if (missing(h)) 
+    h <- c(MASS::bandwidth.nrd(x), MASS::bandwidth.nrd(y), 
+           MASS::bandwidth.nrd(z))/6
+  else if (length(h) != 3) 
+    h <- rep(h, length = 3)
+  if (length(n) != 3) 
+    n <- rep(n, length = 3)
+  if (length(lims) == 2) 
+    lims <- rep(lims, length = 6)
+  gx <- seq(lims[1], lims[2], length = n[1])
+  gy <- seq(lims[3], lims[4], length = n[2])
+  gz <- seq(lims[5], lims[6], length = n[3])
+  mx <- matrix(outer(gx, x, dnorm, h[1]), n[1], nx)
+  my <- matrix(outer(gy, y, dnorm, h[2]), n[2], nx)
+  mz <- matrix(outer(gz, z, dnorm, h[3]), n[3], nx)
+  v <- array(0, n)
+  tmy.nx <- t(my)/nx
+  for (k in 1:n[3]) {
+    tmy.nz.zk <- tmy.nx * mz[k, ]
+    v[, , k] <- mx %*% tmy.nz.zk
+  }
+  return(list(x = gx, y = gy, z = gz, d = v))
+}
+
+# function adapted from R package MASS
+kde2d = function (x, y, h, n = 25, lims = c(range(x), range(y))) 
+# https://cran.r-project.org/web/packages/MASS/index.html
+{
+  nx <- length(x)
+  if (length(y) != nx) 
+    stop("data vectors must be the same length")
+  if (any(!is.finite(x)) || any(!is.finite(y))) 
+    stop("missing or infinite values in the data are not allowed")
+  if (any(!is.finite(lims))) 
+    stop("only finite values are allowed in 'lims'")
+  n <- rep(n, length.out = 2L)
+  gx <- seq.int(lims[1L], lims[2L], length.out = n[1L])
+  gy <- seq.int(lims[3L], lims[4L], length.out = n[2L])
+  h <- if (missing(h)) 
+    c(bandwidth.nrd(x), bandwidth.nrd(y))
+  else rep(h, length.out = 2L)
+  if (any(h <= 0)) 
+    stop("bandwidths must be strictly positive")
+  h <- h/4
+  ax <- outer(gx, x, "-")/h[1L]
+  ay <- outer(gy, y, "-")/h[2L]
+  z <- tcrossprod(matrix(dnorm(ax), , nx), matrix(dnorm(ay), , nx))/(nx * h[1L] * h[2L])
+  list(x = gx, y = gy, z = z)
+}
+
 
 # Inform functions ----
 initiatePB = function(iterOBJ){
@@ -622,5 +548,3 @@ paste2columns = function(x, y, delim = "---") {
   }
   z
 }
-
-# RtSNE utils.R ----
