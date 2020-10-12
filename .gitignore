@@ -38,8 +38,9 @@ vignettes/*.pdf
 # R Environment Variables
 .Renviron
 
-# Ignore html
+# Ignore notebook & html
 **.html
+**.rmd
 
 # Ignore results
 /results/
@@ -49,3 +50,4 @@ vignettes/*.pdf
 
 # Ignore tmp data .dat
 **.dat
+
