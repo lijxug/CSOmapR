@@ -13,3 +13,4 @@ Imports: Rcpp (>= 1.0.3)
 LinkingTo: Rcpp, RcppEigen
 RoxygenNote: 7.1.1
 LazyData: true
+Suggests: plotly, htmlwidgets

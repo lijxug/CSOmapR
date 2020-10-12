@@ -229,7 +229,6 @@ optimization <-
           ydata = ydata * 50 / range
         }
       }
-      if (verbose) processBar(iter01, iter, max_iter, tail = "ETA")
     }
     ydata
   }
@@ -466,74 +465,6 @@ kde2d = function (x, y, h, n = 25, lims = c(range(x), range(y)))
 
 
 # Inform functions ----
-initiatePB = function(iterOBJ){
-  .tic = sprintf("%s", paste0(".TIC_", iterOBJ))
-  rm_list = c(iterOBJ, .tic)
-  if(any(exists(rm_list, inherits = T)))
-    rm(list = rm_list, inherits = T)
-}
-
-processBar = function(objName,
-                      i,
-                      cycles,
-                      title = "Process",
-                      scale = 40,
-                      sign = "#", 
-                      tail = "",
-                      terminal = "R", # terminal could be R/log, others default to shell
-                      final = "Work done!") {
-  suppressPackageStartupMessages(require("iterators"))
-  if (!exists(objName)) {
-    if (terminal != "R")
-      words_list = unlist(lapply(1:cycles, function(x) {
-        sprintf(
-          paste0("\033[?25l\r%s %5.1f%% | %-", scale, "s | "),
-          title,
-          x * 100 / cycles ,
-          paste0(rep(sign, ceiling(x * scale / cycles)), collapse = "")
-        )
-      }))#\033[?25l hide the cursor - linux control code
-    else
-      words_list = unlist(lapply(1:cycles, function(x) {
-        sprintf(
-          paste0("\r%s %5.1f%% | %-", scale, "s | "),
-          title,
-          x * 100 / cycles ,
-          paste0(rep(sign, ceiling(x * scale / cycles)), collapse = "")
-        )
-      }))
-    eval(parse(text = sprintf("%s <<- iter(words_list)", objName)))
-    eval(parse(text = sprintf("%s <<- Sys.time()", paste0(".TIC_",objName))))
-    # if i didn't start at 1
-    times = i
-    while (times > 1) {
-      msg = eval(parse(text = sprintf("nextElem(%s)", objName)))
-      times = times - 1
-    }
-  }
-  
-  msg = eval(parse(text = sprintf("nextElem(%s)", objName)))
-  if(tail == "ETA"){
-    .tic = eval(parse(text = sprintf("%s", paste0(".TIC_",objName))))
-    if(terminal != "R"){
-      tail = paste0("ETA: ", format(round((Sys.time() - .tic) / i * (cycles - i), digits = 2)), "\033[K")
-    }
-    else {
-      tail = paste0("ETA: ", format(round((Sys.time() - .tic) / i * (cycles - i), digits = 2)), "   ")
-    }
-  }
-  if(terminal == "log")
-    tail = paste0(tail, "\n")
-  cat(paste0(msg, tail))
-  if(i == cycles){
-    if(nchar(final)) final = loginfo(final, printnow = F)
-    if(terminal != "R") cat("\033[?25h")
-    cat(paste0("\n", final))
-    rm(list = objName, inherits = T)
-  }
-}
-
-
 loginfo <- function(..., printnow = T) {
   msg = paste0(list(...), collapse = "")
   msg <- paste0("[",format(Sys.time()), "] ", msg,"\n")
@@ -552,4 +483,47 @@ paste2columns = function(x, y, delim = "---") {
     z =  c(z, paste0(sort(c(x[i], y[i])), collapse = delim))
   }
   z
+}
+
+# 3DPlot ----
+#' Plot 3D figure using plotly
+#' A wrapper function to plot 3D plots using plotly. Not necessary for CSOmap's core functions.
+#' 
+#' @param plt_tbl data.frame/tibble; Should provide coordinates x,y,z.
+#' @param color_by string; Specify that by which columns should the data points will be colored 
+#' @param title string; Title
+#' @param save_dir string; Speicfy the saving path of the output 3D plot. Default = NULL.
+#' @param ... Other arguments that will be passed to htmlwidgets::saveWidget
+#' @return a plotly object
+#' @export
+plot3D = function(plt_tbl,
+                        color_by = "density",
+                        title = "3D density",
+                        save_path = NULL, 
+                        ...
+) {
+  
+  if (!requireNamespace("plot_ly", quietly = TRUE) || !requireNamespace("saveWidget", quietly = TRUE)) {
+    stop("Package \"plotly\" and htmlwidgets needed for this function to work. Please install it.",
+         call. = FALSE)
+  } 
+  fig_density = plotly::plot_ly(
+    plt_tbl,
+    x = ~ x,
+    y = ~ y,
+    z = ~ z,
+    alpha = 0.4
+  ) %>%
+    add_markers(color = eval(parse(text = sprintf("~%s", color_by)))) %>%
+    layout(title = title)
+  
+  if(!is.null(save_dir)){
+    htmlwidgets::saveWidget(
+      fig_density,
+      file = save_path,
+      selfcontained = F,
+      libdir = paste0(dirname(save_dir), "/lib/")
+    )
+  }
+  invisible(fig_density)
 }
