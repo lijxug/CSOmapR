@@ -490,9 +490,6 @@ getContribution = function(TPM, LR, detailed_connections){
   return(LR_contri_lst)
 }
 
-#' #' calcualte LR contribution
-#' #' 
-#' calculateContribution = function(TPM, )
 
 # Calculations: R version ----
 calc_d = function(ydata) {

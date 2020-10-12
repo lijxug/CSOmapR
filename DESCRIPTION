@@ -11,5 +11,5 @@ Encoding: UTF-8
 License: MIT
 Imports: Rcpp (>= 1.0.3)
 LinkingTo: Rcpp, RcppEigen
-RoxygenNote: 7.1.0.9000
+RoxygenNote: 7.1.1
 LazyData: true

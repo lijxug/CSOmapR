@@ -35,6 +35,9 @@ load_FItSNE = function(path2fast_tsneR = NULL){
 #'       one iteration. Larger steps are clipped to this value. This prevents                                                                                               
 #'       possible instabilities during gradient descent.  Set to -1 to switch it                                                                                            
 #'       off. Default: 5                                                                                                                                                    
+#' @param mom_switch_iter Default 250
+#' @param momentum Default 0.5 
+#' @param final_momentum Default 0.8
 #' @param nterms If using FIt-SNE, this is the number of interpolation points per sub-interval                                                                              
 #' @param intervals_per_integer See min_num_intervals                                                                                                                       
 #' @param min_num_intervals Let maxloc = ceil(max(max(X))) and minloc = floor(min(min(X))). i.e. the points are in a [minloc]^no_dims by [maxloc]^no_dims interval/square.  
@@ -185,4 +188,49 @@ run_tSNE = function(path2fast_tsneR = NULL,
   args$fast_tsne_path = fast_tsne_path
   
   out =  do.call(fftRtsne, args)
+}
+
+
+#' Run exact tsne, wrapper for integrated Exact TSNE calculation cpp
+#' 
+#' @param X affinity matrix to input
+#' @param no_dims integer; Output dimensionality; Default = 3
+#' @param verbose logical; Whether to print out debug information; Default = TRUE
+#' @param max_iter integer; maximum iteration; Default = 1000
+#' @param Y_in user-defined intiate coordinates; Default = NULL
+#' @param init TRUE if Y_in were specified
+#' @param rand_seed integer; random seed default = -1, set by time.
+#' @param max_step_norm Maximum distance that a point is allowed to move on one iteration. Larger steps are clipped to this value. 
+#' This prevents possible instabilities during gradient descent. Set to -1 to switch it off. (Default: 5) #' 
+#' @param mom_switch_iter Numeric; (Default: 250)
+#' @param momentum numeric; (Default 0.5)
+#' @param final_momentum numeric; (Default 0.8)
+#' @param df Degree of freedom of t-distribution, must be greater than 0. Values smaller than 1 correspond to heavier tails, 
+#' which can often resolve substructure in the embedding. See Kobak et al. (2019) for details. Default is 1.0
+#' @useDynLib CSOmapR
+#' @import Rcpp
+#' @export
+#' 
+runExactTSNE_R = function(X, no_dims = 3, ...){
+  # NumericMatrix X, int no_dims, 
+  # bool verbose, int max_iter, 
+  # NumericMatrix Y_in, bool init, 
+  # int rand_seed, bool skip_random_init, double max_step_norm, 
+  # int mom_switch_iter, double momentum, double final_momentum, double df
+  args = list(...)
+  args$verbose = ifelse(is.null(args$verbose), T, args$verbose)
+  args$max_iter = ifelse(is.null(args$max_iter), 1000, args$max_iter)
+  args$rand_seed = ifelse(is.null(args$rand_seed), -1, args$rand_seed)
+  args$init = ifelse(is.null(args$Y_in), F, T)
+  if(!args$init){args$Y_in = matrix(0, 1, 1)} # default for input
+  args$skip_random_init = args$init
+  args$max_step_norm = ifelse(is.null(args$max_step_norm), 5, args$max_step_norm)
+  args$mom_switch_iter = ifelse(is.null(args$mom_switch_iter), 250 , args$mom_switch_iter)
+  args$momentum = ifelse(is.null(args$momentum), 0.5 , args$momentum)
+  args$final_momentum = ifelse(is.null(args$final_momentum), 0.8 , args$final_momentum)
+  args$df = ifelse(is.null(args$df), 1, args$df)
+  if(args$verbose) message("Passing values to cpp...")
+  out = do.call(runExactTSNE_wrapper, c(list(X = X, no_dims = no_dims), args))
+  out$Y = t(out$Y)
+  return(out)
 }

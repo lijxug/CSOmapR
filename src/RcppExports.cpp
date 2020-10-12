@@ -6,6 +6,29 @@
 
 using namespace Rcpp;
 
+// runExactTSNE_wrapper
+Rcpp::List runExactTSNE_wrapper(NumericMatrix X, int no_dims, bool verbose, int max_iter, NumericMatrix Y_in, bool init, int rand_seed, bool skip_random_init, double max_step_norm, int mom_switch_iter, double momentum, double final_momentum, double df);
+RcppExport SEXP _CSOmapR_runExactTSNE_wrapper(SEXP XSEXP, SEXP no_dimsSEXP, SEXP verboseSEXP, SEXP max_iterSEXP, SEXP Y_inSEXP, SEXP initSEXP, SEXP rand_seedSEXP, SEXP skip_random_initSEXP, SEXP max_step_normSEXP, SEXP mom_switch_iterSEXP, SEXP momentumSEXP, SEXP final_momentumSEXP, SEXP dfSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type X(XSEXP);
+    Rcpp::traits::input_parameter< int >::type no_dims(no_dimsSEXP);
+    Rcpp::traits::input_parameter< bool >::type verbose(verboseSEXP);
+    Rcpp::traits::input_parameter< int >::type max_iter(max_iterSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type Y_in(Y_inSEXP);
+    Rcpp::traits::input_parameter< bool >::type init(initSEXP);
+    Rcpp::traits::input_parameter< int >::type rand_seed(rand_seedSEXP);
+    Rcpp::traits::input_parameter< bool >::type skip_random_init(skip_random_initSEXP);
+    Rcpp::traits::input_parameter< double >::type max_step_norm(max_step_normSEXP);
+    Rcpp::traits::input_parameter< int >::type mom_switch_iter(mom_switch_iterSEXP);
+    Rcpp::traits::input_parameter< double >::type momentum(momentumSEXP);
+    Rcpp::traits::input_parameter< double >::type final_momentum(final_momentumSEXP);
+    Rcpp::traits::input_parameter< double >::type df(dfSEXP);
+    rcpp_result_gen = Rcpp::wrap(runExactTSNE_wrapper(X, no_dims, verbose, max_iter, Y_in, init, rand_seed, skip_random_init, max_step_norm, mom_switch_iter, momentum, final_momentum, df));
+    return rcpp_result_gen;
+END_RCPP
+}
 // calc_d_rcpp
 Eigen::MatrixXd calc_d_rcpp(Eigen::MatrixXd ydata);
 RcppExport SEXP _CSOmapR_calc_d_rcpp(SEXP ydataSEXP) {
@@ -32,6 +55,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_CSOmapR_runExactTSNE_wrapper", (DL_FUNC) &_CSOmapR_runExactTSNE_wrapper, 13},
     {"_CSOmapR_calc_d_rcpp", (DL_FUNC) &_CSOmapR_calc_d_rcpp, 1},
     {"_CSOmapR_update_grads_rcpp", (DL_FUNC) &_CSOmapR_update_grads_rcpp, 3},
     {NULL, NULL, 0}

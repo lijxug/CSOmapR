@@ -56,6 +56,12 @@ one iteration. Larger steps are clipped to this value. This prevents
 possible instabilities during gradient descent.  Set to -1 to switch it                                                                                            
 off. Default: 5}
 
+\item{mom_switch_iter}{Default 250}
+
+\item{momentum}{Default 0.5}
+
+\item{final_momentum}{Default 0.8}
+
 \item{nterms}{If using FIt-SNE, this is the number of interpolation points per sub-interval}
 
 \item{intervals_per_integer}{See min_num_intervals}
