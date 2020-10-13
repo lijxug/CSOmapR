@@ -497,11 +497,11 @@ paste2columns = function(x, y, delim = "---") {
 #' @return a plotly object
 #' @export
 plot3D = function(plt_tbl,
-                        color_by = "density",
-                        title = "3D density",
-                        save_path = NULL, 
-                        ...
-) {
+                  color_by = "density",
+                  title = "3D density",
+                  save_path = NULL,
+                  ...) {
+  
   
   if (!requireNamespace("plot_ly", quietly = TRUE) || !requireNamespace("saveWidget", quietly = TRUE)) {
     stop("Package \"plotly\" and htmlwidgets needed for this function to work. Please install it.",
