@@ -11,21 +11,11 @@ A data frame with 1961 rows and 3 variables:
   \item{V2}{Gene names of receptors}
   \item{V3}{Weigths of the ligand-receptor pairs}
 }
-
-A data frame with 4645 rows and 2 variables:
-\describe{
-  \item{cells}{Cell names}
-  \item{labels}{Cell labels}
-}
 }
 \usage{
-LR
-
 LR
 }
 \description{
 A data frame of 1961 ligand-receptor pairs.
-
-A data frame of the labels of cells, corresponding to cells in TPM.
 }
 \keyword{datasets}
