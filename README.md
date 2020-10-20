@@ -52,8 +52,15 @@ cellinfo_tbl = cellinfo_tbl %>% mutate(density = density_obj)
 p_3Ddensity = plot3D(cellinfo_tbl, color_by = "density", title = "3D density")
 ```
 
-# When dealing with large dataset
-We provide two options: tSNE(BH algorithm) or downsampling
+## Get significance
 ``` r
+signif_results = getSignificance(coords, labels = cellinfo_tbl$labels)
+contribution_list = getContribution(TPM, LR, signif_results$detailed_connections)
+```
 
+# When dealing with large dataset
+We provide two options: optimize coordinates through tSNE(BH algorithm), or downsample the original huge dataset first.
+
+``` r
+# under development
 ```
