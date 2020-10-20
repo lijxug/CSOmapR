@@ -515,7 +515,7 @@ plot3D = function(plt_tbl,
   fig_density = plotly::add_markers(fig_density, color = eval(parse(text = sprintf("~%s", color_by))))
   fig_density = plotly::layout(fig_density, title = title)
   
-  if(!is.null(save_dir)){
+  if(!is.null(save_path)){
     htmlwidgets::saveWidget(
       fig_density,
       file = save_path,
