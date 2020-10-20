@@ -502,8 +502,8 @@ plot3D = function(plt_tbl,
                   save_path = NULL,
                   ...) {
   
-  if (!requireNamespace("plotly", quietly = TRUE)) {
-    warning("Package \"plotly\" needed for this function to work. Please install it.")
+  if (!requireNamespace("plotly", quietly = TRUE) || !requireNamespace("htmlwidgets")) {
+    stop("Package \"plotly\" and \"htmlwidgets\" are needed for this function to work. Please install it.")
   }
   fig_density = plotly::plot_ly(
     plt_tbl,
@@ -512,8 +512,8 @@ plot3D = function(plt_tbl,
     z = ~ z,
     alpha = 0.4
   ) 
-  fig_density = add_markers(fig_density, color = eval(parse(text = sprintf("~%s", color_by))))
-  fig_density = layout(fig_density, title = title)
+  fig_density = plot_ly::add_markers(fig_density, color = eval(parse(text = sprintf("~%s", color_by))))
+  fig_density = plot_ly::layout(fig_density, title = title)
   
   if(!is.null(save_dir)){
     htmlwidgets::saveWidget(
