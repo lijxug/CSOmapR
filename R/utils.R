@@ -502,7 +502,7 @@ plot3D = function(plt_tbl,
                   save_path = NULL,
                   ...) {
   
-  if (!requireNamespace("plot_ly", quietly = TRUE)) {
+  if (!requireNamespace("plotly", quietly = TRUE)) {
     warning("Package \"plotly\" needed for this function to work. Please install it.")
   }
   fig_density = plotly::plot_ly(
