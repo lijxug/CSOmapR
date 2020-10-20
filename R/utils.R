@@ -511,9 +511,9 @@ plot3D = function(plt_tbl,
     y = ~ y,
     z = ~ z,
     alpha = 0.4
-  ) %>%
-    add_markers(color = eval(parse(text = sprintf("~%s", color_by)))) %>%
-    layout(title = title)
+  ) 
+  fig_density = add_markers(fig_density, color = eval(parse(text = sprintf("~%s", color_by))))
+  fig_density = layout(fig_density, title = title)
   
   if(!is.null(save_dir)){
     htmlwidgets::saveWidget(
