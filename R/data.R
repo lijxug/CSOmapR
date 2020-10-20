@@ -26,4 +26,4 @@
 #'   \item{cells}{Cell names}
 #'   \item{labels}{Cell labels}
 #' }
-"LR"
+"labelData"
