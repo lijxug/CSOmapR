@@ -512,8 +512,8 @@ plot3D = function(plt_tbl,
     z = ~ z,
     alpha = 0.4
   ) 
-  fig_density = plot_ly::add_markers(fig_density, color = eval(parse(text = sprintf("~%s", color_by))))
-  fig_density = plot_ly::layout(fig_density, title = title)
+  fig_density = plotly::add_markers(fig_density, color = eval(parse(text = sprintf("~%s", color_by))))
+  fig_density = plotly::layout(fig_density, title = title)
   
   if(!is.null(save_dir)){
     htmlwidgets::saveWidget(
