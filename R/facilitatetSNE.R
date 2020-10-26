@@ -229,8 +229,9 @@ runExactTSNE_R = function(X, no_dims = 3, ...){
   args$momentum = ifelse(is.null(args$momentum), 0.5 , args$momentum)
   args$final_momentum = ifelse(is.null(args$final_momentum), 0.8 , args$final_momentum)
   args$df = ifelse(is.null(args$df), 1, args$df)
-  if(args$verbose) message("Passing values to cpp...")
+  if(args$verbose) loginfo("Now calculating exact TSNE")
   out = do.call(runExactTSNE_wrapper, c(list(X = X, no_dims = no_dims), args))
+  if(args$verbose) loginfo("Calculation done!")
   out$Y = t(out$Y)
   return(out)
 }

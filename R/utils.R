@@ -325,7 +325,7 @@ getCoordinates = function(TPM, LR, method = 'tSNE', verbose = F, ...) {
       X = affinityMat,
       no_dims = 3,
       max_iter = 1000,
-      verbose = verbose
+      verbose = verbose, ...
     )
     coords = coords_res$Y
   }

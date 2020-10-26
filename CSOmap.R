@@ -99,17 +99,26 @@ cellinfo_outdir = paste0(args$output_dir, "/cell_infos.tsv")
 write_tsv(cellinfo_tbl, path = cellinfo_outdir)
 
 # get significance ----
+# for(iCol in 2:ncol(labelData)) {
+iCol = 2 # ignore the extra columns
+labels <-
+  labelData[, iCol, drop = T][match(colnames(TPM), labelData[, 1, drop = T])]
+labels[is.na(labels)] = "unlabeled"
+standards <- unique(labels)
+labelIx <- match(labels, standards)
+cellCounts <- table(labelIx)
 
-for(iCol in 2:ncol(labelData)) {
-  labels <- labelData[, iCol, drop = T][match(colnames(TPM), labelData[,1,drop = T])]
-  labels[is.na(labels)] = "unlabeled"
-  standards <- unique(labels)
-  labelIx <- match(labels, standards)
-  cellCounts <- table(labelIx)
-  
-  # Get significance
-  signif_res = getSignificance(coords, labels = labels)
-  write_csv(signif_res$pvalue_tbl, path = paste0(args$output_dir, "/signif_interacting_clusters_",colnames(labelData)[iCol], ".csv"))
-}
+# Get significance
+signif_res = getSignificance(coords, labels = labels)
+write_csv(
+  signif_res$pvalue_tbl,
+  path = paste0(
+    args$output_dir,
+    "/signif_interacting_clusters_",
+    colnames(labelData)[iCol],
+    ".csv"
+  )
+)
+# }
 
 loginfo("Work Done!")
