@@ -70,8 +70,7 @@ getSignificance = function(coordinates, labels, k = 3, adjusted.method = "fdr", 
     cellsfrom1 = names(labels)[labels == cluster1]
     cellsfrom2 = names(labels)[labels == cluster2]
     
-    
-    sub_connects_mt = connects_mt[cellsfrom1, cellsfrom2]
+    sub_connects_mt = connects_mt[cellsfrom1, cellsfrom2, drop = F]
     
     if(cluster1 == cluster2){ # only count once if self2self
       sub_connects_mt[lower.tri(sub_connects_mt)] = F
