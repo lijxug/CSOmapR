@@ -383,6 +383,9 @@ getContribution = function(TPM, LR, detailed_connections, verbose = T){
       loginfo(sprintf("%d/%d cluster pairs calculated\n", which(names(detailed_connections) == target_clusterPair), length(names(detailed_connections))))
     }
   }
+  # clear memory every loop 
+  rm(L1S, L1R, R1S, R1R, all_intensity, contribution_mt, contribution_forCluster)
+  invisible(gc())
   
   return(LR_contri_lst)
 }
