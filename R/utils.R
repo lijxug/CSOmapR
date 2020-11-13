@@ -348,7 +348,7 @@ getCoordinates = function(TPM, LR, method = 'tSNE', verbose = F, ...) {
 getContribution = function(TPM, LR, detailed_connections, verbose = T){
   LR[, 1] = as.character(LR[, 1])
   LR[, 2] = as.character(LR[, 2])
-  
+  if(verbose) {loginfo("Extracting data matrix")}
   ligands_existed = intersect(rownames(TPM), LR[, 1])
   receptors_existed = intersect(rownames(TPM), LR[, 2])
   
@@ -360,6 +360,7 @@ getContribution = function(TPM, LR, detailed_connections, verbose = T){
     LRscores = rep(1, nrow(LR))
   }
   
+  if(verbose) {loginfo("Calculate contribution of ", length(detailed_connections), " cluster pairs.")}
   LR_contri_lst = list()
   # calculate contribution cell-pair by cell-pair
   for(target_clusterPair in names(detailed_connections)){
@@ -379,7 +380,7 @@ getContribution = function(TPM, LR, detailed_connections, verbose = T){
     # head(contribution_forCluster)
     LR_contri_lst[[target_clusterPair]] = contribution_forCluster
     if(which(names(detailed_connections) == target_clusterPair) %% 100 ==0 && verbose){
-      cat(sprintf("%d/%d cluster pairs calculated\n", which(names(detailed_connections) == target_clusterPair), length(names(detailed_connections))))
+      loginfo(sprintf("%d/%d cluster pairs calculated\n", which(names(detailed_connections) == target_clusterPair), length(names(detailed_connections))))
     }
   }
   
