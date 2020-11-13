@@ -365,7 +365,7 @@ getContribution = function(TPM, LR, detailed_connections, verbose = T){
   # calculate contribution cell-pair by cell-pair
   for(target_clusterPair in names(detailed_connections)){
     if(nrow(detailed_connections[[target_clusterPair]]) < 3){
-      warning("Number of connected cells in ", target_clusterPair, " is lower than 3.")
+      warning("Number of connected cells in ", target_clusterPair, " is lower than 3.\n")
     }
     L1S = TPM[flt_LR[, 1], detailed_connections[[target_clusterPair]][, 1], drop = F]
     R1S = TPM[flt_LR[, 2], detailed_connections[[target_clusterPair]][, 1], drop = F]
