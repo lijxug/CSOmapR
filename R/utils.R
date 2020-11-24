@@ -550,7 +550,7 @@ plot3D = function(plt_tbl,
       fig_density,
       file = save_path,
       selfcontained = F,
-      libdir = paste0(dirname(save_dir), "/lib/")
+      libdir = paste0(dirname(save_path), "/lib/")
     )
   }
   invisible(fig_density)
