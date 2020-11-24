@@ -549,8 +549,8 @@ plot3D = function(plt_tbl,
     htmlwidgets::saveWidget(
       fig_density,
       file = save_path,
-      selfcontained = F,
-      libdir = paste0(dirname(save_path), "/lib/")
+      selfcontained = T# ,
+      # libdir = paste0(dirname(save_path), "/lib/")
     )
   }
   invisible(fig_density)
