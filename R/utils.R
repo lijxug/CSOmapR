@@ -522,13 +522,15 @@ paste2columns = function(x, y, delim = "---") {
 #' @param plt_tbl data.frame/tibble; Should provide coordinates x,y,z.
 #' @param color_by string; Specify that by which columns should the data points will be colored 
 #' @param title string; Title
-#' @param save_dir string; Speicfy the saving path of the output 3D plot. Default = NULL.
+#' @param alpha numeirc; 0-1 specify the alpha of dots
+#' @param save_path string; Speicfy the saving path of the output 3D plot. a `/lib/` will also be generated with the output html. Default = NULL.
 #' @param ... Other arguments that will be passed to htmlwidgets::saveWidget
 #' @return a plotly object
 #' @export
 plot3D = function(plt_tbl,
                   color_by = "density",
                   title = "3D density",
+                  alpha = 0.8,
                   save_path = NULL,
                   ...) {
   
@@ -540,7 +542,7 @@ plot3D = function(plt_tbl,
     x = ~ x,
     y = ~ y,
     z = ~ z,
-    alpha = 0.4
+    alpha = alpha
   ) 
   fig_density = plotly::add_markers(fig_density, color = eval(parse(text = sprintf("~%s", color_by))))
   fig_density = plotly::layout(fig_density, title = title)
@@ -549,8 +551,8 @@ plot3D = function(plt_tbl,
     htmlwidgets::saveWidget(
       fig_density,
       file = save_path,
-      selfcontained = T# ,
-      # libdir = paste0(dirname(save_path), "/lib/")
+      selfcontained = F,
+      libdir = paste0(dirname(save_path), "/lib/")
     )
   }
   invisible(fig_density)

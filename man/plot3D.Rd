@@ -9,6 +9,7 @@ plot3D(
   plt_tbl,
   color_by = "density",
   title = "3D density",
+  alpha = 0.8,
   save_path = NULL,
   ...
 )
@@ -20,9 +21,11 @@ plot3D(
 
 \item{title}{string; Title}
 
-\item{...}{Other arguments that will be passed to htmlwidgets::saveWidget}
+\item{alpha}{numeirc; 0-1 specify the alpha of dots}
 
-\item{save_dir}{string; Speicfy the saving path of the output 3D plot. Default = NULL.}
+\item{save_path}{string; Speicfy the saving path of the output 3D plot. a `/lib/` will also be generated with the output html. Default = NULL.}
+
+\item{...}{Other arguments that will be passed to htmlwidgets::saveWidget}
 }
 \value{
 a plotly object

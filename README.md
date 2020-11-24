@@ -55,6 +55,7 @@ density_obj = getDensity3D(cellinfo_tbl$x, cellinfo_tbl$y, cellinfo_tbl$z)
 cellinfo_tbl = cellinfo_tbl %>% mutate(density = density_obj)
 
 p_3Ddensity = plot3D(cellinfo_tbl, color_by = "density", title = "3D density")
+
 ```
 
 ## Get significance
