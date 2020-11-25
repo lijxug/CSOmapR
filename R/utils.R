@@ -401,10 +401,13 @@ getContribution = function(TPM, LR, detailed_connections, verbose = T){
 #' @return Named matrix of normalized connection
 #' @export
 calcNormalizedConnection = function(connection_mt, cell_count_table){
+  stopifnot(all(rownames(connection_mt) == colnames(connection_mt)))
+  cell_count_table = cell_count_table[rownames(connection_mt)]
   count_mt = lapply(rownames(connection_mt), function(x){
     cell_count_table[x] * cell_count_table
   }) %>% do.call(what = rbind, .)
   rownames(count_mt) = rownames(connection_mt)
+  count_mt = count_mt[, colnames(connection_mt)]
   diag(count_mt) = cell_count_table * (cell_count_table-1)
   normalized_connection = connection_mt/count_mt
   return(normalized_connection)
