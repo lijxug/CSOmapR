@@ -14,7 +14,7 @@
 #' 
 getSignificance = function(coordinates, labels, k = 3, adjusted.method = "fdr", verbose = F) {
   stopifnot(is.matrix(coordinates))
-  if(ncol(is.matrix) < 2 | ncol(is.matrix) > 3)
+  if(ncol(coordinates) < 2 | ncol(coordinates) > 3)
     warning("Abnormal number of dimensions of the coordinates")
   # preprocess
   labels = setNames(labels, nm = rownames(coordinates))
