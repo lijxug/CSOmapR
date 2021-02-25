@@ -4,6 +4,7 @@
 ---
 
 R package of CSOmap(developing
+Right now, CSOmapR is only available on the linux-based machines. Installation on windows may encounter errors.
 
 # Installation
 
