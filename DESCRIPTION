@@ -3,10 +3,14 @@ Type: Package
 Title: CSOmap in R
 Version: 1.0
 Date: 2020-09-24
-Author: Jason Li
-Maintainer: Jason Li <lijxug@gmail.com>
+Authors@R: 
+    person(given = "Jason",
+           family = "Li",
+           role = c("aut", "cre", "cph", "ctb"),
+           email = "lijxug@gmail.com",
+           comment = c(ORCID = "0000-0002-8720-1344"))
 Description: 
-  pass
+    An more powerful version of CSOmap in R
 Encoding: UTF-8
 License: MIT
 Imports: Rcpp (>= 1.0.3)
