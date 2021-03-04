@@ -562,3 +562,48 @@ plot3D = function(plt_tbl,
   }
   invisible(fig_density)
 }
+
+# Combine p values ----
+
+#' Combine p values
+#' A wrapper function to combined p values from multiple indepedent tests
+#' Require pacakge 'metap'
+#' 
+#' @param p_values a vectors.
+#' @param method One of the c("Fisher", "Pearson", "Edgington", "Tippett", "Lancaster", "Stouffer", "Truncated", "Wilkinson")
+#' @param ... Other arguments passed to metap functions
+#' @return A metap object with the combined p value
+#' @export
+combinePvalues = function(p_values,
+                  method = "Stouffer",
+                  ...) {
+  
+  if (!requireNamespace("metap", quietly = TRUE)) {
+    stop("Package \"metap\" is needed for this function to work. Please install it.")
+  }
+  
+  stopifnot(
+    method %in% c(
+      "Fisher",
+      "Pearson",
+      "Edgington",
+      "Tippett",
+      "Lancaster",
+      "Stouffer",
+      "Truncated",
+      "Wilkinson"
+    )
+  )
+  result_object = switch(method,
+    "Fisher" = metap::sumlog(p_values),
+    "Pearson" = pchisq(-2 * sum(log(1-p_values)), df = length(p_values)*2, lower.tail = TRUE), 
+    "Edgington" = metap::sump(p_values), 
+    "Tippett" = metap::minimump(p_values, ...),
+    "Lancaster" = metap::invchisq(p_values, ...),
+    "Stouffer" = metap::sumz(p_values, ...),
+    "Truncated" = metap::truncated(p_values, ...),
+    "Wilkinson" = metap::wilkinsonp(p_values, ...)
+  )
+  
+  return(result_object)
+}
