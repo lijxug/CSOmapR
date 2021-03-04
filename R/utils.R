@@ -113,6 +113,8 @@ getSignificance = function(coordinates, labels, k = 3, adjusted.method = "fdr", 
     data.frame(cluster_pair = cluster_pair[low_idx], 
                p.value = p_value[low_idx], 
                q.value = p.adjust(p_value[low_idx], method = adjusted.method), 
+               p.value.depletion = 1-p_value[low_idx],
+               q.value.depletion = p.adjust(1-p_value[low_idx], method = adjusted.method), 
                stringsAsFactors = F)
   
   q_value = p_value
