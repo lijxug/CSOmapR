@@ -69,9 +69,11 @@ contribution_list = getContribution(TPM, LR, signif_results$detailed_connections
 # When dealing with large dataset
 We provide two options: optimize coordinates through tSNE(BH algorithm), or downsample the original huge dataset first.
 
-# Citation 
-Ren, X., Zhong, G., Zhang, Q., Zhang, L., Sun, Y., and Zhang, Z. (2020). Reconstruction of cell spatial organization from single-cell RNA sequencing data based on ligand-receptor mediated self-assembly. Cell Res.
-
 ``` r
 # under development
 ```
+
+# Citation 
+Ren, X., Zhong, G., Zhang, Q., Zhang, L., Sun, Y., and Zhang, Z. (2020). Reconstruction of cell spatial organization from single-cell RNA sequencing data based on ligand-receptor mediated self-assembly. Cell Res.
+
+
