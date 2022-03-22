@@ -1,5 +1,5 @@
 # CSOmapR
-[![The MIT License](https://img.shields.io/badge/license-MIT-orange.svg)](https://github.com/lijxug/CSOmapR/blob/master/LICENSE)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://github.com/lijxug/CSOmapR/blob/master/LICENSE)
 
 ---
 
